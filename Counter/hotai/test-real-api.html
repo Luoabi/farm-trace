@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .success {
+            border-left-color: #52c41a;
+        }
+        
+        .error {
+            border-left-color: #f5222d;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .status.success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status.error {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API 测试工具</h1>
+        <p class="subtitle">测试后端 API 接口连接</p>
+        
+        <!-- 注册测试 -->
+        <div class="section">
+            <h2>1. 测试注册接口</h2>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="regUsername" value="testfarmer01" placeholder="输入用户名">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="regPassword" value="123456" placeholder="输入密码">
+            </div>
+            <div class="form-group">
+                <label>手机号</label>
+                <input type="text" id="regPhone" value="13800138001" placeholder="输入手机号">
+            </div>
+            <div class="form-group">
+                <label>农场名称</label>
+                <input type="text" id="regFarmName" value="测试农场01" placeholder="输入农场名称">
+            </div>
+            <div class="form-group">
+                <label>农场地址</label>
+                <input type="text" id="regFarmAddress" value="四川省西昌市" placeholder="输入农场地址">
+            </div>
+            <button onclick="testRegister()">测试注册</button>
+            <div id="registerResult"></div>
+        </div>
+        
+        <!-- 登录测试 -->
+        <div class="section">
+            <h2>2. 测试登录接口</h2>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="loginUsername" value="testfarmer01" placeholder="输入用户名">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPassword" value="123456" placeholder="输入密码">
+            </div>
+            <button onclick="testLogin()">测试登录</button>
+            <div id="loginResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        async function testRegister() {
+            const resultDiv = document.getElementById('registerResult');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            
+            const data = {
+                username: document.getElementById('regUsername').value,
+                password: document.getElementById('regPassword').value,
+                phone: document.getElementById('regPhone').value,
+                role: 'FARMER',
+                organization: document.getElementById('regFarmName').value,
+                farmName: document.getElementById('regFarmName').value,
+                farmAddress: document.getElementById('regFarmAddress').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.code === 200) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <span class="status success">✓ 成功</span>
+                            <h3>响应数据：</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <span class="status error">✗ 失败</span>
+                            <h3>错误信息：</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <span class="status error">✗ 网络错误</span>
+                        <h3>错误信息：</h3>
+                        <pre>${error.message}</pre>
+                        <p style="margin-top: 10px; color: #666;">
+                            请确保后端服务运行在 http://localhost:8080
+                        </p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            
+            const data = {
+                username: document.getElementById('loginUsername').value,
+                password: document.getElementById('loginPassword').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.code === 200) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <span class="status success">✓ 成功</span>
+                            <h3>响应数据：</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <span class="status error">✗ 失败</span>
+                            <h3>错误信息：</h3>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <span class="status error">✗ 网络错误</span>
+                        <h3>错误信息：</h3>
+                        <pre>${error.message}</pre>
+                        <p style="margin-top: 10px; color: #666;">
+                            请确保后端服务运行在 http://localhost:8080
+                        </p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
