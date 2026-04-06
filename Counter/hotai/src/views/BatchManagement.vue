@@ -232,8 +232,8 @@ const batchRules = {
 const initData = async () => {
   loading.value = true;
   try {
-    // API获取数据
-    const response = await batchAPI.getBatchList({
+    // 用农户id去获取列表
+    const response = await batchAPI.getBatchListByFarmer(farmerId, {
       page: pagination.currentPage,
       pageSize: pagination.pageSize,
       ...searchForm

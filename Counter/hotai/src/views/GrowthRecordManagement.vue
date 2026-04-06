@@ -292,6 +292,9 @@ import { Plus, Search, RefreshLeft, View, EditPen, Delete, Upload } from '@eleme
 import { growthRecordAPI } from '../api/modules/growthRecord';
 import { batchAPI } from '../api/modules/batch';
 
+// 当前农户的id  在localStorage userInfo下的id
+const farmerId = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).id : null;
+
 // 状态定义
 const loading = ref(false);
 const saving = ref(false);
@@ -377,10 +380,8 @@ const initData = async () => {
       pageSize: pagination.pageSize,
       ...searchForm
     };
-    // 如果有批次ID，使用按批次查询接口，否则使用通用查询接口
-    const response = searchForm.batchId
-      ? await growthRecordAPI.getGrowthRecordsByBatch(searchForm.batchId, params)
-      : await growthRecordAPI.getGrowthRecordList(params);
+    // 使用农户ID查询该农户的生长记录
+    const response = await growthRecordAPI.getGrowthRecordsByFarmer(farmerId, params);
     console.log(response);
     
     recordList.value = response.list || [];

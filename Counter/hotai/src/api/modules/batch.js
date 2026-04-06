@@ -30,7 +30,7 @@ export const batchAPI = {
   },
   
   // 根据农户ID查询批次列表
-  getBatchListByFarmer(params, farmerId) {
+  getBatchListByFarmer(farmerId,params ) {
     return request({
       url: '/batch/list-by-farmer',
       method: 'post',

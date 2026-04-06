@@ -37,6 +37,16 @@ export const growthRecordAPI = {
     });
   },
   
+  // 根据农户ID获取生长记录列表（分页）
+  getGrowthRecordsByFarmer(farmerId, params) {
+    return request({
+      url: '/growth-record/list-by-farmer',
+      method: 'post',
+      params: { farmerId },
+      data: params
+    });
+  },
+  
   // 更新生长记录
   updateGrowthRecord(id, data) {
     return request({

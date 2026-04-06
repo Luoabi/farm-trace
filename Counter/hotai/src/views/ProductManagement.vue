@@ -315,6 +315,9 @@ import { Plus, Download, Search, RefreshLeft, Check, Close, Delete, View, Edit, 
 import { productAPI } from '../api/modules/product';
 import { batchAPI } from '../api/modules/batch';
 
+// 当前农户的id  在localStorage userInfo下的id
+const farmerId = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).id : null;
+
 // 响应式数据
 const loading = ref(false);
 const saving = ref(false);
@@ -435,26 +438,12 @@ const stockRules = {
 const initData = async () => {
   loading.value = true;
   try {
-    // 获取当前登录农户ID
-    const farmerId = localStorage.getItem('farmerId');
-    
-    // 尝试从API获取数据
-    let response;
-    if (farmerId) {
-      // 按农户ID查询商品
-      response = await productAPI.getProductListByFarmerId(farmerId, {
-        page: pagination.currentPage,
-        pageSize: pagination.pageSize,
-        ...searchForm
-      });
-    } else {
-      // 超级管理员查询所有商品
-      response = await productAPI.getProductList({
-        page: pagination.currentPage,
-        pageSize: pagination.pageSize,
-        ...searchForm
-      });
-    }
+    // 使用农户ID查询该农户的商品
+    const response = await productAPI.getProductListByFarmer(farmerId, {
+      page: pagination.currentPage,
+      pageSize: pagination.pageSize,
+      ...searchForm
+    });
     
     productList.value = response.list || [];
     pagination.total = response.total || 0;

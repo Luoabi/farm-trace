@@ -25,11 +25,12 @@ export const productAPI = {
       data: params
     });
   },
-  // 获取农户商品列表
-  getProductListByFarmerId(farmerId, params) {
+  // 根据农户ID获取商品列表（分页）
+  getProductListByFarmer(farmerId, params) {
     return request({
-      url: `/product/list-by-farmer/${farmerId}`,
+      url: '/product/list-by-farmer',
       method: 'post',
+      params: { farmerId },
       data: params
     });
   },
