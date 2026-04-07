@@ -77,6 +77,15 @@ export const orderAPI = {
     });
   },
   
+  // 取消订单
+  cancelOrder(id, reason) {
+    return request({
+      url: `/order/cancel/${id}`,
+      method: 'put',
+      params: { reason }
+    });
+  },
+  
   // 删除订单
   deleteOrder(id) {
     return request({
