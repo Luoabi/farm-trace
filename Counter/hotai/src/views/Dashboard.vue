@@ -1,19 +1,10 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard" v-loading="loading">
     <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="page-title">驾驶舱</h1>
       <div class="page-actions">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          @change="handleDateRangeChange"
-          class="date-picker"
-        />
-        <el-button type="primary" @click="refreshData">
+        <el-button type="primary" @click="refreshData" :loading="loading">
           <el-icon><Refresh /></el-icon>
           刷新数据
         </el-button>
@@ -31,10 +22,6 @@
             <div class="stats-value">{{ statistics.totalBatches }}</div>
             <div class="stats-label">产品批次</div>
           </div>
-          <div class="stats-trend">
-            <span class="trend-up">+12%</span>
-            <small>较上月</small>
-          </div>
         </div>
       </el-card>
 
@@ -46,10 +33,6 @@
           <div class="stats-info">
             <div class="stats-value">{{ statistics.totalProducts }}</div>
             <div class="stats-label">商品种类</div>
-          </div>
-          <div class="stats-trend">
-            <span class="trend-up">+8%</span>
-            <small>较上月</small>
           </div>
         </div>
       </el-card>
@@ -63,10 +46,6 @@
             <div class="stats-value">{{ statistics.totalOrders }}</div>
             <div class="stats-label">订单数量</div>
           </div>
-          <div class="stats-trend">
-            <span class="trend-up">+15%</span>
-            <small>较上月</small>
-          </div>
         </div>
       </el-card>
 
@@ -76,12 +55,8 @@
             <el-icon><User /></el-icon>
           </div>
           <div class="stats-info">
-            <div class="stats-value">{{ statistics.totalUsers }}</div>
-            <div class="stats-label">用户数量</div>
-          </div>
-          <div class="stats-trend">
-            <span class="trend-down">-2%</span>
-            <small>较上月</small>
+            <div class="stats-value">¥{{ statistics.totalSales.toFixed(2) }}</div>
+            <div class="stats-label">销售总额</div>
           </div>
         </div>
       </el-card>
@@ -92,11 +67,7 @@
       <el-card class="chart-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>生产趋势</span>
-            <el-select v-model="chartType" size="small">
-              <el-option label="月度" value="month" />
-              <el-option label="季度" value="quarter" />
-            </el-select>
+            <span>批次状态分布</span>
           </div>
         </template>
         <div class="chart-content">
@@ -107,7 +78,7 @@
       <el-card class="chart-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>产品分布</span>
+            <span>订单状态分布</span>
           </div>
         </template>
         <div class="chart-content">
@@ -142,8 +113,8 @@
       </el-card>
     </div>
 
-    <!-- 待处理任务区域 -->
-    <div class="pending-tasks">
+    <!-- 待处理任务区域（仅超级管理员） -->
+    <div class="pending-tasks" v-if="getUserInfo()?.role === '超级管理员'">
       <el-card shadow="hover">
         <template #header>
           <div class="card-header">
@@ -170,8 +141,10 @@
 import { ref, reactive, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh, Box, Goods, Document, User } from '@element-plus/icons-vue';
-import { dashboardAPI } from '../api/modules/dashboard';
-import { mockDashboardData } from '../api/modules/dashboard';
+import { batchAPI } from '../api/modules/batch';
+import { productAPI } from '../api/modules/product';
+import { orderAPI } from '../api/modules/order';
+import { growthRecordAPI } from '../api/modules/growthRecord';
 
 import Chart from 'chart.js/auto';
 
@@ -182,70 +155,307 @@ const productionChartRef = ref(null);
 const distributionChartRef = ref(null);
 let productionChart = null;
 let distributionChart = null;
+const loading = ref(false);
 
 // 统计数据
 const statistics = reactive({
   totalBatches: 0,
   totalProducts: 0,
   totalOrders: 0,
-  totalUsers: 0
+  totalSales: 0
 });
 
 // 最近活动
 const recentActivities = ref([]);
 
 // 待处理任务
-const pendingTasks = ref([
-  {
-    id: 1,
-    title: '审核新批次创建申请',
-    description: '西昌草莓-202402批',
-    type: '审核',
-    completed: false
-  },
-  {
-    id: 2,
-    title: '处理待发货订单',
-    description: '订单号：XCNM202403210002',
-    type: '订单',
-    completed: false
-  },
-  {
-    id: 3,
-    title: '更新商品库存信息',
-    description: '西昌有机白萝卜库存不足',
-    type: '库存',
-    completed: false
+const pendingTasks = ref([]);
+
+// 获取用户信息
+const getUserInfo = () => {
+  const userInfoStr = localStorage.getItem('userInfo');
+  if (userInfoStr) {
+    return JSON.parse(userInfoStr);
   }
-]);
+  return null;
+};
 
 // 初始化数据
 const initData = async () => {
+  loading.value = true;
   try {
-    // 尝试从API获取数据
-    const response = mockDashboardData;
-    statistics.totalBatches = response.statistics.totalBatches;
-    statistics.totalProducts = response.statistics.totalProducts;
-    statistics.totalOrders = response.statistics.totalOrders;
-    statistics.totalUsers = response.statistics.totalUsers;
+    const userInfo = getUserInfo();
+    const userRole = userInfo?.role || '';
+    const userId = userInfo?.id || '';
     
-    recentActivities.value = response.recentActivities;
+    console.log('驾驶舱 - 用户信息:', userInfo);
+    console.log('驾驶舱 - 用户角色:', userRole);
+    console.log('驾驶舱 - 用户ID:', userId);
     
-    // 更新图表数据
-    if (productionChart) {
-      productionChart.data.labels = response.chartData.productionTrend.map(item => item.month);
-      productionChart.data.datasets[0].data = response.chartData.productionTrend.map(item => item.value);
-      productionChart.update();
+    // 1. 获取统计数据
+    if (userRole === '超级管理员') {
+      // 超级管理员：查看所有数据
+      await loadAdminStatistics();
+    } else if (userRole === '农户') {
+      // 农户：只查看自己的数据
+      await loadFarmerStatistics(userId);
     }
     
-    if (distributionChart) {
-      distributionChart.data.labels = response.chartData.productDistribution.map(item => item.name);
-      distributionChart.data.datasets[0].data = response.chartData.productDistribution.map(item => item.value);
-      distributionChart.update();
-    }
+    // 2. 获取分布数据（用于饼图）
+    await loadDistributionData(userRole, userId);
+    
+    // 3. 获取最近活动
+    await loadRecentActivities(userRole, userId);
+    
+    // 4. 获取待处理任务
+    await loadPendingTasks(userRole, userId);
+    
   } catch (error) {
-    console.error('获取仪表盘数据失败:', error);
-    ElMessage.error('获取仪表盘数据失败: ' + (error.message || '未知错误'));
+    console.error('加载驾驶舱数据失败:', error);
+    ElMessage.error('加载数据失败: ' + (error.message || '未知错误'));
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 加载超级管理员统计数据
+const loadAdminStatistics = async () => {
+  try {
+    // 批次数
+    const batchRes = await batchAPI.getBatchList({ page: 1, pageSize: 1 });
+    statistics.totalBatches = batchRes.total || 0;
+    
+    // 商品数
+    const productRes = await productAPI.getProductList({ page: 1, pageSize: 1 });
+    statistics.totalProducts = productRes.total || 0;
+    
+    // 订单数
+    const orderRes = await orderAPI.getOrderList({ page: 1, pageSize: 1 });
+    statistics.totalOrders = orderRes.total || 0;
+    
+    // 销售额（获取所有已完成订单）
+    const allOrdersRes = await orderAPI.getOrderList({ page: 1, pageSize: 9999 });
+    const orders = allOrdersRes.list || [];
+    statistics.totalSales = orders
+      .filter(o => o.orderStatus >= 3)  // 已发货和已完成
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  } catch (error) {
+    console.error('加载管理员统计数据失败:', error);
+  }
+};
+
+// 加载农户统计数据
+const loadFarmerStatistics = async (farmerId) => {
+  try {
+    // 我的批次数
+    const batchRes = await batchAPI.getBatchListByFarmer(farmerId, { page: 1, pageSize: 1 });
+    statistics.totalBatches = batchRes.total || 0;
+    
+    // 我的商品数
+    const productRes = await productAPI.getProductListByFarmer(farmerId, { page: 1, pageSize: 1 });
+    statistics.totalProducts = productRes.total || 0;
+    
+    // 我的订单数
+    const orderRes = await orderAPI.getOrdersByFarmer({ page: 1, pageSize: 1 }, farmerId);
+    statistics.totalOrders = orderRes.total || 0;
+    
+    // 我的销售额
+    const allOrdersRes = await orderAPI.getOrdersByFarmer({ page: 1, pageSize: 9999 }, farmerId);
+    const orders = allOrdersRes.list || [];
+    statistics.totalSales = orders
+      .filter(o => o.orderStatus >= 3)
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  } catch (error) {
+    console.error('加载农户统计数据失败:', error);
+  }
+};
+
+// 加载分布数据
+const loadDistributionData = async (userRole, userId) => {
+  try {
+    let batchList = [];
+    let orderList = [];
+    let productList = [];
+    
+    if (userRole === '超级管理员') {
+      // 获取所有数据
+      const batchRes = await batchAPI.getBatchList({ page: 1, pageSize: 9999 });
+      batchList = batchRes.list || [];
+      
+      const orderRes = await orderAPI.getOrderList({ page: 1, pageSize: 9999 });
+      orderList = orderRes.list || [];
+      
+      const productRes = await productAPI.getProductList({ page: 1, pageSize: 9999 });
+      productList = productRes.list || [];
+    } else if (userRole === '农户') {
+      // 获取农户数据
+      const batchRes = await batchAPI.getBatchListByFarmer(userId, { page: 1, pageSize: 9999 });
+      batchList = batchRes.list || [];
+      
+      const orderRes = await orderAPI.getOrdersByFarmer({ page: 1, pageSize: 9999 }, userId);
+      orderList = orderRes.list || [];
+      
+      const productRes = await productAPI.getProductListByFarmer(userId, { page: 1, pageSize: 9999 });
+      productList = productRes.list || [];
+    }
+    
+    // 统计批次状态分布
+    const batchStatusCount = { 1: 0, 2: 0, 3: 0 };
+    batchList.forEach(batch => {
+      if (batch.status in batchStatusCount) {
+        batchStatusCount[batch.status]++;
+      }
+    });
+    
+    // 统计订单状态分布
+    const orderStatusCount = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    orderList.forEach(order => {
+      if (order.orderStatus in orderStatusCount) {
+        orderStatusCount[order.orderStatus]++;
+      }
+    });
+    
+    // 统计商品分类分布
+    const categoryCount = {};
+    productList.forEach(product => {
+      const category = product.category || '其他';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+    
+    // 更新图表
+    updateCharts(batchStatusCount, orderStatusCount, categoryCount);
+  } catch (error) {
+    console.error('加载分布数据失败:', error);
+  }
+};
+
+// 更新图表
+const updateCharts = (batchStatusCount, orderStatusCount, categoryCount) => {
+  if (productionChart) {
+    // 批次状态分布饼图
+    productionChart.data.labels = ['种植中', '已收获', '已售罄'];
+    productionChart.data.datasets[0].data = [
+      batchStatusCount[1] || 0,
+      batchStatusCount[2] || 0,
+      batchStatusCount[3] || 0
+    ];
+    productionChart.update();
+  }
+  
+  if (distributionChart) {
+    // 订单状态分布饼图
+    distributionChart.data.labels = ['待支付', '待发货', '已发货', '已完成'];
+    distributionChart.data.datasets[0].data = [
+      orderStatusCount[1] || 0,
+      orderStatusCount[2] || 0,
+      orderStatusCount[3] || 0,
+      orderStatusCount[4] || 0
+    ];
+    distributionChart.update();
+  }
+};
+
+// 加载最近活动
+const loadRecentActivities = async (userRole, userId) => {
+  try {
+    let batchList = [];
+    let orderList = [];
+    
+    if (userRole === '超级管理员') {
+      const batchRes = await batchAPI.getBatchList({ page: 1, pageSize: 5 });
+      batchList = batchRes.list || [];
+      
+      const orderRes = await orderAPI.getOrderList({ page: 1, pageSize: 5 });
+      orderList = orderRes.list || [];
+    } else if (userRole === '农户') {
+      const batchRes = await batchAPI.getBatchListByFarmer(userId, { page: 1, pageSize: 5 });
+      batchList = batchRes.list || [];
+      
+      const orderRes = await orderAPI.getOrdersByFarmer({ page: 1, pageSize: 5 }, userId);
+      orderList = orderRes.list || [];
+    }
+    
+    // 合并活动
+    const activities = [
+      ...batchList.map(b => ({
+        id: `batch-${b.id}`,
+        user: b.farmerName || '农户',
+        action: `创建了批次：${b.batchNumber}`,
+        time: b.createTime
+      })),
+      ...orderList.map(o => ({
+        id: `order-${o.id}`,
+        user: o.customerName || '顾客',
+        action: `创建了订单：${o.orderNumber}`,
+        time: o.createTime
+      }))
+    ];
+    
+    // 按时间排序
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    recentActivities.value = activities.slice(0, 10);
+  } catch (error) {
+    console.error('加载最近活动失败:', error);
+  }
+};
+
+// 加载待处理任务（仅超级管理员）
+const loadPendingTasks = async (userRole, userId) => {
+  try {
+    const tasks = [];
+    
+    if (userRole === '超级管理员') {
+      // 1. 待发货订单（所有农户的）
+      const orderRes = await orderAPI.getOrderList({ page: 1, pageSize: 100 });
+      const pendingOrders = (orderRes.list || []).filter(o => o.orderStatus === 2);
+      
+      pendingOrders.slice(0, 5).forEach(order => {
+        tasks.push({
+          id: `order-${order.id}`,
+          title: '待发货订单',
+          description: `订单号：${order.orderNumber}`,
+          type: '订单',
+          completed: false
+        });
+      });
+      
+      // 2. 即将收获的批次（所有农户的）
+      const batchRes = await batchAPI.getBatchList({ page: 1, pageSize: 100 });
+      const batches = batchRes.list || [];
+      const now = new Date();
+      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      batches.forEach(batch => {
+        if (batch.status === 1 && batch.harvestTime) {
+          const harvestDate = new Date(batch.harvestTime);
+          if (harvestDate >= now && harvestDate <= sevenDaysLater) {
+            tasks.push({
+              id: `batch-${batch.id}`,
+              title: '即将收获的批次',
+              description: `${batch.batchNumber} - ${batch.harvestTime}`,
+              type: '批次',
+              completed: false
+            });
+          }
+        }
+      });
+      
+      // 3. 待支付订单
+      const unpaidOrders = (orderRes.list || []).filter(o => o.orderStatus === 1);
+      unpaidOrders.slice(0, 3).forEach(order => {
+        tasks.push({
+          id: `unpaid-${order.id}`,
+          title: '待支付订单',
+          description: `订单号：${order.orderNumber}`,
+          type: '订单',
+          completed: false
+        });
+      });
+    }
+    
+    pendingTasks.value = tasks.slice(0, 10);
+  } catch (error) {
+    console.error('加载待处理任务失败:', error);
   }
 };
 
@@ -278,48 +488,17 @@ function initCharts() {
       productionCtx.clearRect(0, 0, productionCanvas.width, productionCanvas.height);
       distributionCtx.clearRect(0, 0, distributionCanvas.width, distributionCanvas.height);
 
-      // 生产趋势图表
+      // 批次状态分布图表
       productionChart = new Chart(productionCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: '批次数量',
-            data: [],
-            borderColor: '#409eff',
-            backgroundColor: 'rgba(64, 158, 255, 0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      // 产品分布图表
-      distributionChart = new Chart(distributionCtx, {
         type: 'pie',
         data: {
-          labels: [],
+          labels: ['种植中', '已收获', '已售罄'],
           datasets: [{
-            data: [],
+            data: [0, 0, 0],
             backgroundColor: [
               '#409eff',
               '#67c23a',
-              '#e6a23c',
-              '#f56c6c'
+              '#e6a23c'
             ]
           }]
         },
@@ -329,6 +508,38 @@ function initCharts() {
           plugins: {
             legend: {
               position: 'right'
+            },
+            title: {
+              display: false
+            }
+          }
+        }
+      });
+
+      // 订单状态分布图表
+      distributionChart = new Chart(distributionCtx, {
+        type: 'pie',
+        data: {
+          labels: ['待支付', '待发货', '已发货', '已完成'],
+          datasets: [{
+            data: [0, 0, 0, 0],
+            backgroundColor: [
+              '#f56c6c',
+              '#e6a23c',
+              '#409eff',
+              '#67c23a'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            },
+            title: {
+              display: false
             }
           }
         }
@@ -364,9 +575,7 @@ const handleDateRangeChange = (value) => {
 
 // 刷新数据
 const refreshData = () => {
-  ElMessage.success('数据刷新成功');
   initData();
-  initCharts();
 };
 
 // 处理任务完成
@@ -378,13 +587,17 @@ const handleTaskComplete = (task) => {
 
 // 监听图表类型变化
 watch(chartType, () => {
-  initCharts();
+  // 图表类型变化时可以重新加载数据
+  const userInfo = getUserInfo();
+  if (userInfo) {
+    loadDistributionData(userInfo.role, userInfo.id);
+  }
 });
 
 // 组件挂载时初始化
 onMounted(() => {
-  initData();
   initCharts();
+  initData();
 });
 
 // 组件卸载时销毁图表

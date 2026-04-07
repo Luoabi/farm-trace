@@ -12,20 +12,13 @@
     <!-- 搜索和筛选 -->
     <el-card class="search-card" shadow="hover">
       <el-form :model="searchForm" :inline="true" class="search-form">
-        <el-form-item label="批次名称">
-          <el-select
-            v-model="searchForm.batchId"
-            placeholder="请选择批次"
+        <el-form-item label="批次编号">
+          <el-input
+            v-model="searchForm.keyword"
+            placeholder="请输入批次编号或商品名称"
             clearable
-            style="width: 200px;"
-          >
-            <el-option
-              v-for="batch in batchOptions"
-              :key="batch.id"
-              :label="batch.name"
-              :value="batch.id"
-            />
-          </el-select>
+            style="width: 250px;"
+          />
         </el-form-item>
         <el-form-item label="生长阶段">
           <el-select
@@ -39,16 +32,6 @@
             <el-option label="生长期" value="生长期" />
             <el-option label="成熟期" value="成熟期" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="记录日期">
-          <el-date-picker
-            v-model="searchForm.recordDate"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            style="width: 240px;"
-          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
@@ -72,58 +55,37 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="记录ID" width="100" />
-        <el-table-column prop="batchName" label="批次名称" min-width="180" />
-        <el-table-column prop="recordDate" label="记录日期" width="120" />
+        <el-table-column prop="id" label="记录ID" width="120" show-overflow-tooltip />
+        <el-table-column prop="batchNumber" label="批次编号" width="150" />
+        <el-table-column prop="productName" label="商品名称" width="150" />
+        <el-table-column prop="recordTime" label="记录时间" width="180">
+          <template #default="scope">
+            {{ formatDate(scope.row.recordTime) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="growthStage" label="生长阶段" width="100">
           <template #default="scope">
             <el-tag :type="getGrowthStageTag(scope.row.growthStage)">{{ scope.row.growthStage }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="height" label="植株高度" width="100" />
-        <el-table-column prop="condition" label="生长状况" width="100">
+        <el-table-column prop="growthCondition" label="生长状况" width="100">
           <template #default="scope">
-            <el-tag :type="getConditionTag(scope.row.condition)">{{ scope.row.condition }}</el-tag>
+            <el-tag :type="getConditionTag(scope.row.growthCondition)">{{ scope.row.growthCondition }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="height" label="植株高度(cm)" width="120" />
+        <el-table-column prop="temperature" label="温度(°C)" width="100" />
+        <el-table-column prop="humidity" label="湿度(%)" width="100" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="图片" width="100">
-          <template #default="scope">
-            <el-popover
-              trigger="click"
-              placement="top"
-              :width="Math.min(scope.row.imageCount * 150, 600)"
-            >
-              <template #reference>
-                <el-button type="link" size="small">
-                  {{ scope.row.imageCount }}张
-                </el-button>
-              </template>
-              <div class="image-gallery">
-                <el-image
-                  v-for="i in scope.row.imageCount"
-                  :key="`${scope.row.id}-image-${i}`"
-                  :src="`https://via.placeholder.com/120x80?text=Image+${i}`"
-                  :preview-src-list="[`https://via.placeholder.com/400x300?text=Image+${i}`]"
-                  style="width: 120px; height: 80px; margin-right: 10px;"
-                  fit="cover"
-                />
-              </div>
-            </el-popover>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button type="link" size="small" @click="handleViewRecord(scope.row)">
-              <el-icon><View /></el-icon>
-              查看
+              详情
             </el-button>
             <el-button type="link" size="small" @click="handleEditRecord(scope.row)">
-              <el-icon><EditPen /></el-icon>
               编辑
             </el-button>
             <el-button type="link" size="small" @click="handleDeleteRecord(scope.row.id)">
-              <el-icon><Delete /></el-icon>
               删除
             </el-button>
           </template>
@@ -155,29 +117,48 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="记录ID">{{ currentRecord.id }}</el-descriptions-item>
           <el-descriptions-item label="批次ID">{{ currentRecord.batchId }}</el-descriptions-item>
-          <el-descriptions-item label="批次名称">{{ currentRecord.batchName }}</el-descriptions-item>
-          <el-descriptions-item label="记录日期">{{ currentRecord.recordDate }}</el-descriptions-item>
-          <el-descriptions-item label="生长阶段">{{ currentRecord.growthStage }}</el-descriptions-item>
-          <el-descriptions-item label="生长状况">{{ currentRecord.condition }}</el-descriptions-item>
-          <el-descriptions-item label="植株高度">{{ currentRecord.height }}</el-descriptions-item>
-          <el-descriptions-item label="温度">{{ currentRecord.temperature }}</el-descriptions-item>
-          <el-descriptions-item label="湿度">{{ currentRecord.humidity }}</el-descriptions-item>
-          <el-descriptions-item label="区块链哈希" :column="2">
-            <el-tag class="hash-tag">{{ currentRecord.blockchainHash }}</el-tag>
+          <el-descriptions-item label="批次编号">{{ currentRecord.batchNumber }}</el-descriptions-item>
+          <el-descriptions-item label="商品名称">{{ currentRecord.productName }}</el-descriptions-item>
+          <el-descriptions-item label="记录时间">{{ formatDate(currentRecord.recordTime) }}</el-descriptions-item>
+          <el-descriptions-item label="生长阶段">
+            <el-tag :type="getGrowthStageTag(currentRecord.growthStage)">{{ currentRecord.growthStage }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="描述" :column="2">{{ currentRecord.description }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ currentRecord.createdAt }}</el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentRecord.updatedAt }}</el-descriptions-item>
+          <el-descriptions-item label="生长状况">
+            <el-tag :type="getConditionTag(currentRecord.growthCondition)">{{ currentRecord.growthCondition }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="植株高度(cm)">{{ currentRecord.height || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="茎粗(cm)">{{ currentRecord.stemThickness || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="叶片颜色">{{ currentRecord.leafColor || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="病虫害情况">{{ currentRecord.pestDiseaseStatus || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="土壤含水量(%)">{{ currentRecord.waterContent || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="环境温度(°C)">{{ currentRecord.temperature || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="环境湿度(%)">{{ currentRecord.humidity || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="光照时长(小时)">{{ currentRecord.sunshineHours || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="上链状态">
+            <el-tag :type="currentRecord.chainStatus === 1 ? 'success' : 'info'">
+              {{ currentRecord.chainStatus === 1 ? '已上链' : '未上链' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="区块链哈希" :span="2">
+            <el-tag v-if="currentRecord.txHash" class="hash-tag">{{ currentRecord.txHash }}</el-tag>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="上链时间" :span="2">
+            {{ currentRecord.chainTime ? formatDate(currentRecord.chainTime) : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">{{ currentRecord.description || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDate(currentRecord.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ formatDate(currentRecord.updateTime) }}</el-descriptions-item>
         </el-descriptions>
         
         <!-- 图片展示 -->
-        <div v-if="currentRecord.images && currentRecord.images.length > 0" class="image-section">
+        <div v-if="currentRecord.imageUrls" class="image-section">
           <h3 class="section-title">记录图片</h3>
           <el-image
-            v-for="(image, index) in currentRecord.images"
+            v-for="(image, index) in currentRecord.imageUrls.split(',')"
             :key="index"
-            :src="image"
-            :preview-src-list="currentRecord.images"
+            :src="image.trim()"
+            :preview-src-list="currentRecord.imageUrls.split(',').map(url => url.trim())"
             style="width: 150px; height: 100px; margin-right: 10px; margin-bottom: 10px;"
             fit="cover"
           />
@@ -203,78 +184,78 @@
         class="record-form"
       >
         <el-form-item prop="batchId" label="选择批次">
-          <el-select v-model="recordForm.batchId" placeholder="请选择批次">
+          <el-select v-model="recordForm.batchId" placeholder="请选择批次" style="width: 100%;">
             <el-option
               v-for="batch in batchOptions"
               :key="batch.id"
               :label="batch.name"
               :value="batch.id"
-              @click="handleBatchSelect(batch)"
             />
           </el-select>
         </el-form-item>
-        <el-form-item prop="recordDate" label="记录日期">
+        <el-form-item prop="recordTime" label="记录时间">
           <el-date-picker
-            v-model="recordForm.recordDate"
-            type="date"
-            placeholder="选择日期"
+            v-model="recordForm.recordTime"
+            type="datetime"
+            placeholder="选择日期时间"
             style="width: 100%;"
           />
         </el-form-item>
         <el-form-item prop="growthStage" label="生长阶段">
-          <el-select v-model="recordForm.growthStage" placeholder="请选择生长阶段">
+          <el-select v-model="recordForm.growthStage" placeholder="请选择生长阶段" style="width: 100%;">
             <el-option label="发芽期" value="发芽期" />
             <el-option label="幼苗期" value="幼苗期" />
             <el-option label="生长期" value="生长期" />
             <el-option label="成熟期" value="成熟期" />
           </el-select>
         </el-form-item>
-        <el-form-item prop="height" label="植株高度">
-          <el-input v-model="recordForm.height" placeholder="请输入植株高度，如：5cm" />
-        </el-form-item>
-        <el-form-item prop="temperature" label="温度">
-          <el-input v-model="recordForm.temperature" placeholder="请输入温度，如：20°C" />
-        </el-form-item>
-        <el-form-item prop="humidity" label="湿度">
-          <el-input v-model="recordForm.humidity" placeholder="请输入湿度，如：65%" />
-        </el-form-item>
-        <el-form-item prop="condition" label="生长状况">
-          <el-select v-model="recordForm.condition" placeholder="请选择生长状况">
+        <el-form-item prop="growthCondition" label="生长状况">
+          <el-select v-model="recordForm.growthCondition" placeholder="请选择生长状况" style="width: 100%;">
             <el-option label="良好" value="良好" />
             <el-option label="一般" value="一般" />
             <el-option label="较差" value="较差" />
             <el-option label="异常" value="异常" />
           </el-select>
         </el-form-item>
+        <el-form-item prop="height" label="植株高度(cm)">
+          <el-input-number v-model="recordForm.height" :min="0" :step="0.1" placeholder="请输入植株高度" style="width: 100%;" />
+        </el-form-item>
+        <el-form-item prop="stemThickness" label="茎粗(cm)">
+          <el-input-number v-model="recordForm.stemThickness" :min="0" :step="0.1" placeholder="请输入茎粗" style="width: 100%;" />
+        </el-form-item>
+        <el-form-item prop="leafColor" label="叶片颜色">
+          <el-input v-model="recordForm.leafColor" placeholder="请输入叶片颜色，如：深绿色" />
+        </el-form-item>
+        <el-form-item prop="pestDiseaseStatus" label="病虫害情况">
+          <el-input v-model="recordForm.pestDiseaseStatus" placeholder="请输入病虫害情况，如：无" />
+        </el-form-item>
+        <el-form-item prop="waterContent" label="土壤含水量(%)">
+          <el-input-number v-model="recordForm.waterContent" :min="0" :max="100" :step="0.1" placeholder="请输入土壤含水量" style="width: 100%;" />
+        </el-form-item>
+        <el-form-item prop="temperature" label="环境温度(°C)">
+          <el-input-number v-model="recordForm.temperature" :step="0.1" placeholder="请输入环境温度" style="width: 100%;" />
+        </el-form-item>
+        <el-form-item prop="humidity" label="环境湿度(%)">
+          <el-input-number v-model="recordForm.humidity" :min="0" :max="100" :step="0.1" placeholder="请输入环境湿度" style="width: 100%;" />
+        </el-form-item>
+        <el-form-item prop="sunshineHours" label="光照时长(小时)">
+          <el-input-number v-model="recordForm.sunshineHours" :min="0" :step="0.1" placeholder="请输入光照时长" style="width: 100%;" />
+        </el-form-item>
         <el-form-item prop="description" label="详细描述">
           <el-input
             v-model="recordForm.description"
             type="textarea"
             :rows="4"
-            placeholder="请输入详细描述，如：浇水情况、施肥情况、病虫害防治等"
+            placeholder="请输入详细描述，如：浇水情况、施肥情况等"
           />
         </el-form-item>
-        <el-form-item label="上传图片">
-          <el-upload
-            v-model:file-list="uploadFileList"
-            class="upload-demo"
-            action="#"
-            multiple
-            :on-change="handleFileChange"
-            :on-remove="handleFileRemove"
-            :auto-upload="false"
-            list-type="picture"
-          >
-            <el-button type="primary">
-              <el-icon><Upload /></el-icon>
-              选择图片
-            </el-button>
-            <template #tip>
-              <div class="el-upload__tip">
-                只能上传jpg/png文件，单个文件不超过2MB，最多上传5张图片
-              </div>
-            </template>
-          </el-upload>
+        <el-form-item label="图片URL">
+          <el-input
+            v-model="recordForm.imageUrls"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入图片URL，多个URL用逗号分隔"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -292,8 +273,10 @@ import { Plus, Search, RefreshLeft, View, EditPen, Delete, Upload } from '@eleme
 import { growthRecordAPI } from '../api/modules/growthRecord';
 import { batchAPI } from '../api/modules/batch';
 
-// 当前农户的id  在localStorage userInfo下的id
-const farmerId = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).id : null;
+// 当前用户信息
+const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
+const farmerId = userInfo?.id || null;
+const userRole = userInfo?.role || '';
 
 // 状态定义
 const loading = ref(false);
@@ -325,9 +308,8 @@ const getBatchOptions = async () => {
 
 // 搜索表单
 const searchForm = reactive({
-  batchId: '',
-  growthStage: '',
-  recordDate: []
+  keyword: '',
+  growthStage: ''
 });
 
 // 分页信息
@@ -341,15 +323,19 @@ const pagination = reactive({
 const recordForm = reactive({
   id: '',
   batchId: '',
-  batchName: '',
-  recordDate: '',
   growthStage: '',
-  height: '',
-  temperature: '',
-  humidity: '',
-  condition: '良好',
+  growthCondition: '良好',
+  recordTime: '',
+  height: null,
+  stemThickness: null,
+  leafColor: '',
+  pestDiseaseStatus: '',
+  waterContent: null,
+  temperature: null,
+  humidity: null,
+  sunshineHours: null,
   description: '',
-  images: []
+  imageUrls: ''
 });
 
 // 表单验证规则
@@ -357,16 +343,13 @@ const recordRules = {
   batchId: [
     { required: true, message: '请选择批次', trigger: 'change' }
   ],
-  recordDate: [
-    { required: true, message: '请选择记录日期', trigger: 'change' }
+  recordTime: [
+    { required: true, message: '请选择记录时间', trigger: 'change' }
   ],
   growthStage: [
     { required: true, message: '请选择生长阶段', trigger: 'change' }
   ],
-  height: [
-    { required: true, message: '请输入植株高度', trigger: 'blur' }
-  ],
-  condition: [
+  growthCondition: [
     { required: true, message: '请选择生长状况', trigger: 'change' }
   ]
 };
@@ -375,13 +358,36 @@ const recordRules = {
 const initData = async () => {
   loading.value = true;
   try {
+    // 构建查询参数，只传递有值的字段
     const params = {
       page: pagination.currentPage,
-      pageSize: pagination.pageSize,
-      ...searchForm
+      pageSize: pagination.pageSize
     };
-    // 使用农户ID查询该农户的生长记录
-    const response = await growthRecordAPI.getGrowthRecordsByFarmer(farmerId, params);
+    
+    // 只有当有值时才添加筛选条件
+    if (searchForm.keyword && searchForm.keyword.trim()) {
+      params.keyword = searchForm.keyword.trim();
+    }
+    
+    if (searchForm.growthStage) {
+      params.growthStage = searchForm.growthStage;
+    }
+    
+    console.log('=== 生长记录查询参数（前端） ===');
+    console.log('farmerId:', farmerId);
+    console.log('userRole:', userRole);
+    console.log('params:', params);
+    console.log('========================');
+    
+    let response;
+    
+    // 超级管理员查看所有生长记录，农户只查看自己的生长记录
+    if (userRole === '超级管理员') {
+      response = await growthRecordAPI.getGrowthRecordList(params);
+    } else {
+      response = await growthRecordAPI.getGrowthRecordsByFarmer(farmerId, params);
+    }
+    
     console.log(response);
     
     recordList.value = response.list || [];
@@ -394,6 +400,20 @@ const initData = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '-';
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 // 获取生长阶段标签
@@ -427,9 +447,8 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   Object.assign(searchForm, {
-    batchId: '',
-    growthStage: '',
-    recordDate: []
+    keyword: '',
+    growthStage: ''
   });
   pagination.currentPage = 1;
   initData();
@@ -491,15 +510,19 @@ const handleCreateRecord = () => {
   Object.assign(recordForm, {
     id: '',
     batchId: '',
-    batchName: '',
-    recordDate: '',
     growthStage: '',
-    height: '',
-    temperature: '',
-    humidity: '',
-    condition: '良好',
+    growthCondition: '良好',
+    recordTime: new Date(),
+    height: null,
+    stemThickness: null,
+    leafColor: '',
+    pestDiseaseStatus: '',
+    waterContent: null,
+    temperature: null,
+    humidity: null,
+    sunshineHours: null,
     description: '',
-    images: []
+    imageUrls: ''
   });
   uploadFileList.value = [];
   recordFormVisible.value = true;
@@ -510,16 +533,22 @@ const handleEditRecord = (row) => {
   isEdit.value = true;
   // 填充表单数据
   Object.assign(recordForm, {
-    ...row,
-    images: row.images || []
+    id: row.id,
+    batchId: row.batchId,
+    growthStage: row.growthStage,
+    growthCondition: row.growthCondition,
+    recordTime: row.recordTime,
+    height: row.height,
+    stemThickness: row.stemThickness,
+    leafColor: row.leafColor,
+    pestDiseaseStatus: row.pestDiseaseStatus,
+    waterContent: row.waterContent,
+    temperature: row.temperature,
+    humidity: row.humidity,
+    sunshineHours: row.sunshineHours,
+    description: row.description,
+    imageUrls: row.imageUrls || ''
   });
-  // 模拟文件列表
-  if (row.imageCount > 0) {
-    uploadFileList.value = Array.from({ length: row.imageCount }, (_, i) => ({
-      name: `image${i + 1}.jpg`,
-      url: row.images?.[i] || `https://via.placeholder.com/300x200?text=Image+${i + 1}`
-    }));
-  }
   recordFormVisible.value = true;
 };
 
@@ -537,15 +566,42 @@ const handleSaveRecord = () => {
   recordFormRef.value.validate((valid) => {
     if (valid) {
       saving.value = true;
+      
+      // 格式化日期为 ISO 字符串（后端 LocalDateTime 可以接收）
+      const formatDateTime = (date) => {
+        if (!date) return null;
+        if (typeof date === 'string') return date;
+        return new Date(date).toISOString();
+      };
+      
+      // 准备提交数据（根据后端 GrowthRecordRequest 字段调整）
+      const submitData = {
+        batchId: recordForm.batchId,
+        growthStage: recordForm.growthStage,
+        growthCondition: recordForm.growthCondition,
+        recordTime: formatDateTime(recordForm.recordTime),
+        height: recordForm.height,
+        stemThickness: recordForm.stemThickness,
+        leafColor: recordForm.leafColor,
+        pestDiseaseStatus: recordForm.pestDiseaseStatus,
+        waterContent: recordForm.waterContent,
+        temperature: recordForm.temperature,
+        humidity: recordForm.humidity,
+        sunshineHours: recordForm.sunshineHours,
+        description: recordForm.description,
+        imageUrls: recordForm.imageUrls
+      };
+      
       const savePromise = isEdit.value 
-        ? growthRecordAPI.updateGrowthRecord(recordForm.id, recordForm) 
-        : growthRecordAPI.createGrowthRecord(recordForm);
+        ? growthRecordAPI.updateGrowthRecord(recordForm.id, submitData) 
+        : growthRecordAPI.createGrowthRecord(submitData);
       
       savePromise.then(() => {
         ElMessage.success(isEdit.value ? '记录更新成功' : '记录创建成功');
         handleCloseForm();
         initData(); // Refresh data after save
       }).catch((error) => {
+        console.error('保存失败:', error);
         ElMessage.error('保存失败: ' + (error.message || '未知错误'));
       }).finally(() => {
         saving.value = false;

@@ -72,12 +72,11 @@
           <el-col :span="6">
             <el-form-item label="订单状态">
               <el-select v-model="searchForm.status" placeholder="请选择订单状态">
-                <el-option label="全部" value="" />
-                <el-option label="待付款" value="待付款" />
-                <el-option label="待发货" value="待发货" />
-                <el-option label="待收货" value="待收货" />
-                <el-option label="已完成" value="已完成" />
-                <el-option label="已取消" value="已取消" />
+                <el-option label="全部" :value="null" />
+                <el-option label="待支付" :value="1" />
+                <el-option label="待发货" :value="2" />
+                <el-option label="已发货" :value="3" />
+                <el-option label="已完成" :value="4" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -113,22 +112,15 @@
         row-key="orderId"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="orderId" label="订单编号" min-width="180" />
+        <el-table-column prop="orderNumber" label="订单编号" min-width="180" />
         <el-table-column label="商品信息" min-width="250">
           <template #default="scope">
             <div class="product-info">
-              <el-image
-                :src="scope.row.productInfo.image"
-                style="width: 60px; height: 60px; margin-right: 10px;"
-                fit="cover"
-                :placeholder="defaultImage"   
-                :error="errorImage"          
-              />
               <div>
-                <div class="product-name">{{ scope.row.productInfo.name }}</div>
+                <div class="product-name">{{ scope.row.productName }}</div>
                 <div class="product-details">
-                  <span>数量：{{ scope.row.productInfo.quantity }}</span>
-                  <span class="price">¥{{ scope.row.productInfo.price }}</span>
+                  <span>数量：{{ scope.row.quantity }}</span>
+                  <span class="price">¥{{ scope.row.productPrice }}</span>
                 </div>
               </div>
             </div>
@@ -137,29 +129,28 @@
         <el-table-column prop="totalPrice" label="订单金额" width="120">
           <template #default="scope">¥{{ scope.row.totalPrice }}</template>
         </el-table-column>
-        <el-table-column prop="buyerName" label="买家" width="120" />
-        <el-table-column prop="buyerPhone" label="联系电话" width="120" />
-        <el-table-column prop="status" label="订单状态" width="120">
+        <el-table-column prop="customerName" label="买家" width="120" />
+        <el-table-column prop="customerPhone" label="联系电话" width="120" />
+        <el-table-column prop="orderStatus" label="订单状态" width="120">
           <template #default="scope">
-            <el-tag :type="getStatusTag(scope.row.status)">{{ scope.row.status }}</el-tag>
+            <el-tag :type="getStatusTag(scope.row.orderStatus)">{{ getStatusText(scope.row.orderStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="下单时间" width="180" />
+        <el-table-column prop="createTime" label="下单时间" width="180">
+          <template #default="scope">{{ formatDate(scope.row.createTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button type="link" size="small" @click="handleViewOrder(scope.row)">
-              <el-icon><View /></el-icon>
               查看
             </el-button>
-            <template v-if="scope.row.status === '待发货'">
+            <template v-if="scope.row.orderStatus === 2">
               <el-button type="link" size="small" @click="handleShipOrder(scope.row)">
-                <el-icon><Ship /></el-icon>
                 发货
               </el-button>
             </template>
-            <template v-else-if="scope.row.status === '待付款'">
+            <template v-else-if="scope.row.orderStatus === 1">
               <el-button type="link" size="small" @click="handleCancelOrder(scope.row)">
-                <el-icon><Delete /></el-icon>
                 取消
               </el-button>
             </template>
@@ -193,100 +184,60 @@
         <el-card class="detail-card">
           <h3 class="card-title">订单信息</h3>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="订单编号">{{ currentOrder.orderId }}</el-descriptions-item>
+            <el-descriptions-item label="订单编号">{{ currentOrder.orderNumber }}</el-descriptions-item>
             <el-descriptions-item label="订单状态">
-              <el-tag :type="getStatusTag(currentOrder.status)">{{ currentOrder.status }}</el-tag>
+              <el-tag :type="getStatusTag(currentOrder.orderStatus)">{{ getStatusText(currentOrder.orderStatus) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="下单时间">{{ currentOrder.createTime }}</el-descriptions-item>
-            <el-descriptions-item label="支付时间">{{ currentOrder.payTime || '未支付' }}</el-descriptions-item>
-            <el-descriptions-item label="发货时间">{{ currentOrder.shipTime || '未发货' }}</el-descriptions-item>
-            <el-descriptions-item label="完成时间">{{ currentOrder.completeTime || '未完成' }}</el-descriptions-item>
-            <el-descriptions-item label="交易流水号">{{ currentOrder.transactionId }}</el-descriptions-item>
-            <el-descriptions-item label="区块链哈希">
-              <el-tag class="hash-tag">{{ currentOrder.blockchainHash }}</el-tag>
-            </el-descriptions-item>
+            <el-descriptions-item label="下单时间">{{ formatDate(currentOrder.createTime) }}</el-descriptions-item>
+            <el-descriptions-item label="支付时间">{{ formatDate(currentOrder.paymentTime) }}</el-descriptions-item>
+            <el-descriptions-item label="发货时间">{{ formatDate(currentOrder.deliveryTime) }}</el-descriptions-item>
+            <el-descriptions-item label="收货时间">{{ formatDate(currentOrder.receiptTime) }}</el-descriptions-item>
+            <el-descriptions-item label="批次编号">{{ currentOrder.batchNumber }}</el-descriptions-item>
+            <el-descriptions-item label="配送方式">{{ currentOrder.deliveryType }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
 
         <!-- 商品信息 -->
         <el-card class="detail-card">
           <h3 class="card-title">商品信息</h3>
-          <el-table :data="[currentOrder.productInfo]" style="width: 100%">
-            <el-table-column label="商品图片" width="80">
-              <template #default="scope">
-                <el-image
-                  :src="defaultImage"
-                  style="width: 60px; height: 60px;"
-                  fit="cover"
-                  :placeholder="defaultImage"   
-                  :error="errorImage"          
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="name" label="商品名称" min-width="200" />
-            <el-table-column prop="price" label="单价" width="100">
-              <template #default="scope">¥{{ scope.row.price }}</template>
-            </el-table-column>
-            <el-table-column prop="quantity" label="数量" width="80" />
-            <el-table-column prop="subtotal" label="小计" width="100">
-              <template #default="scope">
-                <span class="price">¥{{ scope.row.subtotal }}</span>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div class="total-price">
-            <span class="label">订单总金额：</span>
-            <span class="total">¥{{ currentOrder.totalPrice }}</span>
-          </div>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="商品名称">{{ currentOrder.productName }}</el-descriptions-item>
+            <el-descriptions-item label="商品单价">¥{{ currentOrder.productPrice }}</el-descriptions-item>
+            <el-descriptions-item label="购买数量">{{ currentOrder.quantity }}</el-descriptions-item>
+            <el-descriptions-item label="订单总金额">
+              <span class="price">¥{{ currentOrder.totalPrice }}</span>
+            </el-descriptions-item>
+          </el-descriptions>
         </el-card>
 
-        <!-- 收货地址 -->
+        <!-- 收货信息 -->
         <el-card class="detail-card">
           <h3 class="card-title">收货信息</h3>
-          <div class="address-info">
-            <div class="info-item">
-              <span class="label">收货人：</span>
-              <span>{{ currentOrder.buyerName }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">联系电话：</span>
-              <span>{{ currentOrder.buyerPhone }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">收货地址：</span>
-              <span>{{ currentOrder.address }}</span>
-            </div>
-          </div>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="收货人">{{ currentOrder.customerName }}</el-descriptions-item>
+            <el-descriptions-item label="联系电话">{{ currentOrder.customerPhone }}</el-descriptions-item>
+            <el-descriptions-item label="收货地址" :span="2">{{ currentOrder.deliveryAddress }}</el-descriptions-item>
+          </el-descriptions>
         </el-card>
 
         <!-- 物流信息 -->
-        <el-card v-if="currentOrder.status !== '待发货' && currentOrder.status !== '待付款' && currentOrder.status !== '已取消'" class="detail-card">
+        <el-card class="detail-card" v-if="currentOrder.logisticsCompany">
           <h3 class="card-title">物流信息</h3>
-          <div v-if="currentOrder.logisticsInfo" class="logistics-info">
-            <div class="logistics-header">
-              <span class="logistics-company">{{ currentOrder.logisticsInfo.company }}</span>
-              <span class="logistics-number">{{ currentOrder.logisticsInfo.trackingNumber }}</span>
-            </div>
-            <div class="logistics-timeline">
-              <el-timeline>
-                <el-timeline-item
-                  v-for="(item, index) in currentOrder.logisticsInfo.timeline"
-                  :key="index"
-                  :timestamp="item.time"
-                  :type="index === 0 ? 'success' : ''"
-                  :icon="index === 0 ? 'el-icon-check' : ''"
-                >
-                  {{ item.description }}
-                </el-timeline-item>
-              </el-timeline>
-            </div>
-          </div>
-          <div v-else class="no-logistics">暂无物流信息</div>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="物流公司">{{ currentOrder.logisticsCompany }}</el-descriptions-item>
+            <el-descriptions-item label="物流单号">{{ currentOrder.logisticsNumber }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 备注信息 -->
+        <el-card class="detail-card" v-if="currentOrder.remark">
+          <h3 class="card-title">备注信息</h3>
+          <p>{{ currentOrder.remark }}</p>
         </el-card>
       </div>
       <template #footer>
         <el-button @click="handleCloseDetail">关闭</el-button>
-        <template v-if="currentOrder && currentOrder.status === '待发货'">
+        <template v-if="currentOrder && currentOrder.orderStatus === 2">
           <el-button type="primary" @click="handleShipOrder(currentOrder)">发货</el-button>
         </template>
       </template>
@@ -373,7 +324,7 @@ const stats = reactive({
 const searchForm = reactive({
   orderId: '',
   productName: '',
-  status: '',
+  status: null,
   orderTime: []
 });
 
@@ -423,17 +374,42 @@ const initData = async () => {
   }
 };
 
+// 获取状态文本
+const getStatusText = (status) => {
+  const statusMap = {
+    1: '待支付',
+    2: '待发货',
+    3: '已发货',
+    4: '已完成'
+  };
+  return statusMap[status] || '未知';
+};
+
 // 获取状态标签类型
 const getStatusTag = (status) => {
   const statusMap = {
-    '待付款': 'warning',
-    '待发货': 'danger',
-    '待收货': 'primary',
-    '已完成': 'success',
-    '已取消': 'info'
+    1: 'warning',   // 待支付
+    2: 'danger',    // 待发货
+    3: 'primary',   // 已发货
+    4: 'success'    // 已完成
   };
   return statusMap[status] || 'default';
 };
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '-';
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 
 // 搜索
 const handleSearch = () => {
@@ -447,10 +423,11 @@ const handleReset = () => {
   Object.assign(searchForm, {
     orderId: '',
     productName: '',
-    status: '',
+    status: null,
     orderTime: []
   });
   pagination.currentPage = 1;
+  initData();
 };
 
 // 刷新

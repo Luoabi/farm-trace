@@ -23,7 +23,7 @@
     <el-card class="search-card" shadow="hover">
       <el-form :model="searchForm" :inline="true" class="search-form">
         <el-form-item label="商品名称">
-          <el-input v-model="searchForm.name" placeholder="请输入商品名称" clearable style="width: 200px;" />
+          <el-input v-model="searchForm.keyword" placeholder="请输入商品名称" clearable style="width: 200px;" />
         </el-form-item>
         <el-form-item label="商品分类">
           <el-select v-model="searchForm.category" placeholder="请选择商品分类" clearable style="width: 150px;">
@@ -35,8 +35,8 @@
         </el-form-item>
         <el-form-item label="商品状态">
           <el-select v-model="searchForm.status" placeholder="请选择商品状态" clearable style="width: 150px;">
-            <el-option label="上架" value="上架" />
-            <el-option label="下架" value="下架" />
+            <el-option label="上架" value="1" />
+            <el-option label="下架" value="0" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -98,11 +98,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="category" label="分类" width="100" />
-        <el-table-column prop="id" label="批次ID" width="100" />
         <el-table-column prop="price" label="价格(元)" width="100" />
-        <el-table-column prop="stock" label="库存" width="100" />
-        <el-table-column prop="salesCount" label="销量" width="100" />
-        <el-table-column prop="productionPlace" label="生产商" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="productionPlace" label="产地" min-width="150" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="80">
           <template #default="scope">
             <el-tag :type="scope.row.status === '上架' ? 'success' : 'danger'">
@@ -114,25 +111,12 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button type="link" size="small" @click="handleViewProduct(scope.row)">
-              <el-icon>
-                <View />
-              </el-icon>
               查看
             </el-button>
             <el-button type="link" size="small" @click="handleEditProduct(scope.row)">
-              <el-icon>
-                <Edit />
-              </el-icon>
               编辑
             </el-button>
             <el-button type="link" size="small" @click="handleChangeStatus(scope.row)">
-              <!-- 如果商品状态是上架，点击后下架；如果是下架，点击后上架 -->
-              <el-icon v-if="scope.row.status === '上架'">
-                <Close />
-              </el-icon>
-              <el-icon v-else>
-                <Check />
-              </el-icon>
               {{ scope.row.status === '上架' ? '下架' : '上架' }}
             </el-button>
           </template>
@@ -151,60 +135,43 @@
     <el-dialog v-model="productDetailVisible" title="商品详情" width="70%" :before-close="handleCloseDetail">
       <div class="product-detail" v-if="currentProduct">
         <div class="detail-header">
-          <el-image :src="currentProduct.image" style="width: 200px; height: 200px;" fit="cover" />
+          <el-image 
+            :src="currentProduct.imageUrl || 'https://via.placeholder.com/200x200?text=暂无图片'" 
+            style="width: 200px; height: 200px; border-radius: 8px;" 
+            fit="cover" 
+          />
           <div class="product-info">
-            <h3>{{ currentProduct.name }}</h3>
+            <h3>{{ currentProduct.productName }}</h3>
             <div class="info-item">
-              <span class="label">商品ID：</span>
-              <span>{{ currentProduct.id }}</span>
+              <span class="label">商品编号：</span>
+              <span>{{ currentProduct.productCode }}</span>
             </div>
             <div class="info-item">
               <span class="label">分类：</span>
-              <span>{{ currentProduct.category }}</span>
+              <el-tag>{{ currentProduct.category }}</el-tag>
             </div>
             <div class="info-item">
-              <span class="label">价格：</span>
-              <span class="price">¥{{ currentProduct.price }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">库存：</span>
-              <span>{{ currentProduct.stock }} 件</span>
-            </div>
-            <div class="info-item">
-              <span class="label">销量：</span>
-              <span>{{ currentProduct.salesCount }} 件</span>
+              <span class="label">参考价格：</span>
+              <span class="price">¥{{ currentProduct.price }} / {{ currentProduct.unit }}</span>
             </div>
             <div class="info-item">
               <span class="label">状态：</span>
-              <el-tag :type="currentProduct.status === '上架' ? 'success' : 'danger'">
-                {{ currentProduct.status }}
+              <el-tag :type="currentProduct.status === 1 ? 'success' : 'danger'">
+                {{ currentProduct.status === 1 ? '上架' : '下架' }}
               </el-tag>
             </div>
           </div>
         </div>
 
         <el-descriptions :column="2" border style="margin-top: 20px;">
-          <el-descriptions-item label="批次ID">{{ currentProduct.batchId }}</el-descriptions-item>
-          <el-descriptions-item label="批次名称">{{ currentProduct.batchName }}</el-descriptions-item>
-          <el-descriptions-item label="生产商">{{ currentProduct.producer }}</el-descriptions-item>
-          <el-descriptions-item label="产地">{{ currentProduct.origin }}</el-descriptions-item>
-          <el-descriptions-item label="保质期">{{ currentProduct.shelfLife }}</el-descriptions-item>
-          <el-descriptions-item label="包装规格">{{ currentProduct.packageSpec }}</el-descriptions-item>
-          <el-descriptions-item label="区块链哈希" :column="2">
-            <el-tag class="hash-tag">{{ currentProduct.blockchainHash }}</el-tag>
+          <el-descriptions-item label="包装规格">{{ currentProduct.specification || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="产地">{{ currentProduct.productionPlace || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="商品描述" :span="2">
+            {{ currentProduct.description || '暂无描述' }}
           </el-descriptions-item>
-          <el-descriptions-item label="商品描述" :column="2">{{ currentProduct.description }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ currentProduct.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentProduct.updatedAt }}</el-descriptions-item>
+          <el-descriptions-item label="更新时间">{{ currentProduct.updateTime }}</el-descriptions-item>
         </el-descriptions>
-
-        <!-- 更多图片 -->
-        <div v-if="currentProduct.moreImages && currentProduct.moreImages.length > 0" class="more-images">
-          <h4 class="section-title">商品图片</h4>
-          <el-image v-for="(image, index) in currentProduct.moreImages" :key="index" :src="image"
-            :preview-src-list="[currentProduct.image, ...currentProduct.moreImages]"
-            style="width: 120px; height: 90px; margin-right: 10px; margin-bottom: 10px;" fit="cover" />
-        </div>
       </div>
       <template #footer>
         <el-button @click="handleCloseDetail">关闭</el-button>
@@ -216,93 +183,68 @@
       :before-close="handleCloseForm">
       <el-form ref="productFormRef" :model="productForm" :rules="productRules" label-width="120px" class="product-form">
         <el-form-item prop="productCode" label="商品编号">
-          <el-input v-model="productForm.productCode" placeholder="请输入商品编号" />
+          <el-input v-model="productForm.productCode" placeholder="请输入商品编号，如：PC001" />
         </el-form-item>
         <el-form-item prop="name" label="商品名称">
-          <el-input v-model="productForm.name" placeholder="请输入商品名称" />
+          <el-input v-model="productForm.name" placeholder="请输入商品名称，如：西昌葡萄" />
         </el-form-item>
         <el-form-item prop="category" label="商品分类">
-          <el-select v-model="productForm.category" placeholder="请选择商品分类">
+          <el-select v-model="productForm.category" placeholder="请选择商品分类" style="width: 100%;">
             <el-option label="蔬菜" value="蔬菜" />
             <el-option label="水果" value="水果" />
             <el-option label="粮油" value="粮油" />
             <el-option label="其他" value="其他" />
           </el-select>
         </el-form-item>
-        <el-form-item prop="price" label="商品价格">
-          <el-input v-model.number="productForm.price" placeholder="请输入商品价格" prefix-icon="i-ep-cny" />
+        <el-form-item prop="price" label="参考价格">
+          <el-input-number v-model="productForm.price" :min="0" :precision="2" placeholder="请输入参考价格" style="width: 100%;" />
+          <span style="margin-left: 10px; color: #909399;">元</span>
         </el-form-item>
         <el-form-item prop="unit" label="单位">
-          <el-select v-model="productForm.unit" placeholder="请选择单位">
-            <el-option label="kg" value="kg" />
+          <el-select v-model="productForm.unit" placeholder="请选择单位" style="width: 100%;">
+            <el-option label="千克(kg)" value="kg" />
+            <el-option label="斤" value="斤" />
             <el-option label="箱" value="箱" />
             <el-option label="袋" value="袋" />
+            <el-option label="个" value="个" />
           </el-select> 
         </el-form-item>
         <el-form-item prop="specification" label="包装规格">
-          <el-input v-model="productForm.specification" placeholder="请输入包装规格" />
+          <el-input v-model="productForm.specification" placeholder="请输入包装规格，如：5kg/箱" />
         </el-form-item>
         <el-form-item prop="productionPlace" label="产地">
-          <el-input v-model="productForm.productionPlace" placeholder="请输入产地" />
+          <el-input v-model="productForm.productionPlace" placeholder="请输入产地，如：四川省西昌市" />
         </el-form-item>
-        <el-form-item prop="imageUrl" label="图片URL">
-          <el-input v-model="productForm.imageUrl" placeholder="请输入图片URL" />
-        </el-form-item>
-        <el-form-item prop="producer" label="生产商">
-          <el-input v-model="productForm.producer" placeholder="请输入生产商名称" />
-        </el-form-item>
-        <el-form-item prop="origin" label="产地">
-          <el-input v-model="productForm.origin" placeholder="请输入产地" />
-        </el-form-item>
-        <el-form-item prop="shelfLife" label="保质期">
-          <el-input v-model="productForm.shelfLife" placeholder="请输入保质期，如：7天、3个月" />
-        </el-form-item>
-        <el-form-item prop="packageSpec" label="包装规格">
-          <el-input v-model="productForm.packageSpec" placeholder="请输入包装规格" />
-        </el-form-item>
-        <el-form-item label="商品主图">
-          <el-upload v-model:file-list="mainImageList" class="avatar-uploader" action="#" :auto-upload="false"
-            :limit="1" :on-change="handleMainImageChange" list-type="picture">
-            <el-button type="primary">
-              <el-icon>
-                <Upload />
-              </el-icon>
-              上传主图
-            </el-button>
+        <el-form-item label="商品图片">
+          <el-upload 
+            v-model:file-list="mainImageList" 
+            class="avatar-uploader" 
+            action="#" 
+            :auto-upload="false"
+            :limit="1" 
+            :on-change="handleMainImageChange" 
+            list-type="picture-card"
+          >
+            <el-icon><Upload /></el-icon>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持 jpg/png 格式，建议尺寸 800x800
+              </div>
+            </template>
           </el-upload>
         </el-form-item>
         <el-form-item prop="description" label="商品描述">
-          <el-input v-model="productForm.description" type="textarea" :rows="4" placeholder="请输入商品描述" />
+          <el-input 
+            v-model="productForm.description" 
+            type="textarea" 
+            :rows="4" 
+            placeholder="请输入商品描述，如：产品特点、种植方式、营养价值等" 
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="handleCloseForm">取消</el-button>
         <el-button type="primary" @click="handleSaveProduct" :loading="saving">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 更新库存对话框 -->
-    <el-dialog v-model="stockDialogVisible" title="更新库存" width="40%" :before-close="handleCloseStockDialog">
-      <el-form ref="stockFormRef" :model="stockForm" :rules="stockRules" label-width="100px">
-        <el-form-item prop="currentStock" label="当前库存">
-          <el-input v-model="stockForm.currentStock" disabled />
-        </el-form-item>
-        <el-form-item prop="changeType" label="操作类型">
-          <el-radio-group v-model="stockForm.changeType">
-            <el-radio label="增加">增加库存</el-radio>
-            <el-radio label="减少">减少库存</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item prop="changeCount" label="变动数量">
-          <el-input v-model.number="stockForm.changeCount" placeholder="请输入变动数量" />
-        </el-form-item>
-        <el-form-item prop="reason" label="变动原因">
-          <el-input v-model="stockForm.reason" placeholder="请输入库存变动原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="handleCloseStockDialog">取消</el-button>
-        <el-button type="primary" @click="handleUpdateStock">确认更新</el-button>
       </template>
     </el-dialog>
   </div>
@@ -315,20 +257,20 @@ import { Plus, Download, Search, RefreshLeft, Check, Close, Delete, View, Edit, 
 import { productAPI } from '../api/modules/product';
 import { batchAPI } from '../api/modules/batch';
 
-// 当前农户的id  在localStorage userInfo下的id
-const farmerId = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).id : null;
+// 当前用户信息
+const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
+const farmerId = userInfo?.id || null;
+const userRole = userInfo?.role || '';
 
 // 响应式数据
 const loading = ref(false);
 const saving = ref(false);
 const productFormRef = ref(null);
-const stockFormRef = ref(null);
 const productList = ref([]);
 const selectedProducts = ref([]);
 const currentProduct = ref(null);
 const productDetailVisible = ref(false);
 const productFormVisible = ref(false);
-const stockDialogVisible = ref(false);
 const isEdit = ref(false);
 const mainImageList = ref([]);
 
@@ -359,7 +301,7 @@ const loadBatchOptions = async () => {
 
 // 搜索表单
 const searchForm = reactive({
-  name: '',
+  keyword: '',    // 改为 keyword，用于搜索商品名称
   category: '',
   status: ''
 });
@@ -376,24 +318,14 @@ const productForm = reactive({
   id: '',
   productCode: '',
   name: '',
-  category: '',
+  categocary: '',
   description: '',
   price: 0,
   unit: '',
   specification: '',
   productionPlace: '',
   imageUrl: '',
-  status: 'ACTIVE', // ACTIVE:上架,INACTIVE:下架,DELETED:已删除
-  createTime: '',
-  updateTime: ''
-});
-
-// 库存表单
-const stockForm = reactive({
-  currentStock: 0,
-  changeType: '增加',
-  changeCount: '',
-  reason: ''
+  status: 'ACTIVE'
 });
 
 // 表单验证规则
@@ -424,26 +356,26 @@ const productRules = {
   ]
 };
 
-const stockRules = {
-  changeCount: [
-    { required: true, message: '请输入变动数量', trigger: 'blur' },
-    { type: 'number', min: 1, message: '变动数量必须大于0', trigger: 'blur' }
-  ],
-  reason: [
-    { required: true, message: '请输入变动原因', trigger: 'blur' }
-  ]
-};
-
 // 初始化数据
 const initData = async () => {
   loading.value = true;
   try {
-    // 使用农户ID查询该农户的商品
-    const response = await productAPI.getProductListByFarmer(farmerId, {
-      page: pagination.currentPage,
-      pageSize: pagination.pageSize,
-      ...searchForm
-    });
+    let response;
+    
+    // 超级管理员查看所有商品，农户只查看自己的商品
+    if (userRole === '超级管理员') {
+      response = await productAPI.getProductList({
+        page: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        ...searchForm
+      });
+    } else {
+      response = await productAPI.getProductListByFarmer(farmerId, {
+        page: pagination.currentPage,
+        pageSize: pagination.pageSize,
+        ...searchForm
+      });
+    }
     
     productList.value = response.list || [];
     pagination.total = response.total || 0;
@@ -466,11 +398,12 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   Object.assign(searchForm, {
-    name: '',
+    keyword: '',
     category: '',
     status: ''
   });
   pagination.currentPage = 1;
+  initData(); // 重置后立即查询
 };
 
 // 分页大小变化
@@ -526,20 +459,16 @@ const handleCreateProduct = () => {
   // 重置表单
   Object.assign(productForm, {
     id: '',
+    productCode: '',
     name: '',
     category: '',
-    batchId: '',
-    batchName: '',
-    price: '',
-    stock: '',
-    salesCount: 0,
-    producer: '',
-    origin: '',
-    shelfLife: '',
-    packageSpec: '',
-    image: '',
     description: '',
-    status: '上架'
+    price: 0,
+    unit: '',
+    specification: '',
+    productionPlace: '',
+    imageUrl: '',
+    status: 'ACTIVE'
   });
   mainImageList.value = [];
   productFormVisible.value = true;
@@ -550,14 +479,23 @@ const handleEditProduct = (row) => {
   isEdit.value = true;
   // 填充表单数据
   Object.assign(productForm, {
-    ...row,
-    batchName: row.batchName || ''
+    id: row.id,
+    productCode: row.productCode,
+    name: row.productName,
+    category: row.category,
+    description: row.description,
+    price: row.price,
+    unit: row.unit,
+    specification: row.specification,
+    productionPlace: row.productionPlace,
+    imageUrl: row.imageUrl,
+    status: row.status
   });
   // 模拟主图
-  if (row.image) {
+  if (row.imageUrl) {
     mainImageList.value = [{
       name: 'main-image.jpg',
-      url: row.image
+      url: row.imageUrl
     }];
   }
   productFormVisible.value = true;
@@ -577,8 +515,6 @@ const handleSaveProduct = () => {
   productFormRef.value.validate((valid) => {
     if (valid) {
       saving.value = true;
-      // 获取当前登录农户ID
-      const farmerId = localStorage.getItem('farmerId');
       
       // 准备提交数据（根据后端ProductRequest字段调整）
       const submitData = {
@@ -591,7 +527,7 @@ const handleSaveProduct = () => {
         specification: productForm.specification,
         productionPlace: productForm.productionPlace,
         imageUrl: productForm.imageUrl,
-        farmerId: farmerId // 关联农户ID
+        farmerId: farmerId // 使用顶部定义的 farmerId
       };
       
       if (isEdit.value) {
@@ -624,15 +560,17 @@ const handleSaveProduct = () => {
 // 改变商品状态
 const handleChangeStatus = (row) => {
   const newStatus = row.status === '上架' ? '下架' : '上架';
+  const newStatusValue = row.status === '上架' ? '0' : '1'; // 转换为数字字符串
+  
   ElMessageBox.confirm(`确定要将商品「${row.name}」${newStatus}吗？`, '状态变更确认', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
     // 调用更新商品状态API
-    productAPI.updateProductStatus(row.id, newStatus).then(() => {
-      row.status = newStatus;
+    productAPI.updateProductStatus(row.id, newStatusValue).then(() => {
       ElMessage.success(`商品${newStatus}成功`);
+      initData(); // 刷新列表
     }).catch(() => {
       ElMessage.error(`商品${newStatus}失败`);
     });
@@ -648,11 +586,18 @@ const handleBatchPublish = () => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    selectedProducts.value.forEach(item => {
-      item.status = '上架';
+    // 调用API批量更新状态
+    const promises = selectedProducts.value.map(item => 
+      productAPI.updateProductStatus(item.id, '1')
+    );
+    
+    Promise.all(promises).then(() => {
+      ElMessage.success('批量上架成功');
+      selectedProducts.value = [];
+      initData(); // 刷新列表
+    }).catch(() => {
+      ElMessage.error('批量上架失败');
     });
-    selectedProducts.value = [];
-    ElMessage.success('批量上架成功');
   }).catch(() => {
     // 取消操作
   });
@@ -665,11 +610,18 @@ const handleBatchOffline = () => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    selectedProducts.value.forEach(item => {
-      item.status = '下架';
+    // 调用API批量更新状态
+    const promises = selectedProducts.value.map(item => 
+      productAPI.updateProductStatus(item.id, '0')
+    );
+    
+    Promise.all(promises).then(() => {
+      ElMessage.success('批量下架成功');
+      selectedProducts.value = [];
+      initData(); // 刷新列表
+    }).catch(() => {
+      ElMessage.error('批量下架失败');
     });
-    selectedProducts.value = [];
-    ElMessage.success('批量下架成功');
   }).catch(() => {
     // 取消操作
   });
@@ -698,57 +650,6 @@ const handleBatchDelete = () => {
 // 导出数据
 const handleBatchExport = () => {
   ElMessage.success('数据导出成功');
-};
-
-// 打开库存更新对话框
-const handleOpenStockDialog = (row) => {
-  currentProduct.value = row;
-  Object.assign(stockForm, {
-    currentStock: row.stock,
-    changeType: '增加',
-    changeCount: '',
-    reason: ''
-  });
-  stockDialogVisible.value = true;
-};
-
-// 关闭库存对话框
-const handleCloseStockDialog = () => {
-  stockDialogVisible.value = false;
-  if (stockFormRef.value) {
-    stockFormRef.value.resetFields();
-  }
-};
-
-// 更新库存
-const handleUpdateStock = () => {
-  stockFormRef.value.validate((valid) => {
-    if (valid) {
-      // 计算新库存
-      let newStock = stockForm.currentStock;
-      if (stockForm.changeType === '增加') {
-        newStock += stockForm.changeCount;
-      } else {
-        // 检查库存是否足够
-        if (stockForm.changeCount > stockForm.currentStock) {
-          ElMessage.error('库存不足，无法减少');
-          return;
-        }
-        newStock -= stockForm.changeCount;
-      }
-
-      // 更新库存
-      if (currentProduct.value) {
-        const index = productList.value.findIndex(p => p.id === currentProduct.value.id);
-        if (index > -1) {
-          productList.value[index].stock = newStock;
-        }
-      }
-
-      ElMessage.success('库存更新成功');
-      handleCloseStockDialog();
-    }
-  });
 };
 
 // 组件挂载时初始化数据

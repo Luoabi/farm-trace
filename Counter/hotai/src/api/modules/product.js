@@ -55,6 +55,14 @@ export const productAPI = {
       url: `/product/delete/${id}`,
       method: 'delete'
     });
+  },
+  // 更新商品状态
+  updateProductStatus(id, status) {
+    return request({
+      url: `/product/update-status/${id}`,
+      method: 'put',
+      params: { status }
+    });
   }
 };
 

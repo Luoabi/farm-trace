@@ -37,7 +37,7 @@
               <el-option label="农户" value="FARMER" />
             </template>
             <template v-else-if="isFarmer">
-              <el-option label="操作员" value="OPERATOR" />
+              <el-option label="顾客" value="CUSTOMER" />
             </template>
           </el-select>
         </el-form-item>
@@ -128,22 +128,18 @@
         </el-table-column>
         <el-table-column prop="lastLoginTime" label="最后登录" width="180" />
         <el-table-column prop="registerTime" label="注册时间" width="180" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="scope">
             <el-button type="link" size="small" @click="handleViewUser(scope.row)">
-              <el-icon><View /></el-icon>
               查看
             </el-button>
             <el-button type="link" size="small" @click="handleEditUser(scope.row)" :disabled="scope.row.username === 'admin'">
-              <el-icon><Edit /></el-icon>
               编辑
             </el-button>
             <el-button type="link" size="small" @click="handleResetPassword(scope.row)" :disabled="scope.row.username === 'admin'">
-              <el-icon><Key /></el-icon>
               重置密码
             </el-button>
             <el-button type="link" size="small" @click="handleDeleteUser(scope.row)" :disabled="scope.row.username === 'admin'">
-              <el-icon><Delete /></el-icon>
               删除
             </el-button>
           </template>
@@ -257,9 +253,9 @@
             <template v-if="isRootAdmin">
               <el-option label="农户" value="FARMER" />
             </template>
-            <!-- 农户只能创建操作员角色 -->
+            <!-- 农户只能创建顾客角色 -->
             <template v-else-if="isFarmer">
-              <el-option label="操作员" value="OPERATOR" />
+              <el-option label="顾客" value="CUSTOMER" />
             </template>
           </el-select>
         </el-form-item>

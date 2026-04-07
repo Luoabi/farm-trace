@@ -3,7 +3,7 @@
     <!-- 左侧菜单栏 -->
     <el-aside :width="sidebarCollapse ? '64px' : '240px'" class="sidebar">
       <div class="sidebar-header">
-        <img v-if="!sidebarCollapse" src="/vite.svg" class="logo" alt="logo" />
+        <img src="/logo.png" class="logo" alt="logo" />
         <span v-if="!sidebarCollapse" class="logo-text">西昌农产品溯源系统</span>
       </div>
       <el-menu :collapse="sidebarCollapse" :default-active="activeMenu" class="el-menu-vertical"
@@ -16,8 +16,8 @@
           <span v-if="!sidebarCollapse">驾驶舱</span>
         </el-menu-item>
 
-        <!-- 业务功能 - 农户和操作员可见 -->
-        <template v-if="user.role === '农户' || user.role === '操作员'">
+        <!-- 业务功能 - 超级管理员和农户可见 -->
+        <template v-if="user.role === '超级管理员' || user.role === '农户'">
           <el-menu-item index="/products">
             <el-icon>
               <Goods />
@@ -46,7 +46,7 @@
           </el-menu-item>
         </template>
 
-        <!-- 用户管理 - 只有超级管理员或农场管理员可见 -->
+        <!-- 用户管理 - 超级管理员和农场管理员可见 -->
         <el-menu-item v-if="user.role === '超级管理员' || (user.role === '农户' && user.parentId === 'user000')"
           index="/users">
           <el-icon>
@@ -73,7 +73,7 @@
           <el-button link @click="toggleSidebar" class="sidebar-toggle-btn" size="large">
             <el-icon>
               <Fold v-if="!sidebarCollapse" />
-              <Unfold v-else />
+              <Expand v-else />
             </el-icon>
           </el-button>
         </div>
@@ -344,18 +344,33 @@ const handleLogout = () => {
   justify-content: center;
   padding: 0 20px;
   border-bottom: 1px solid #1f2937;
+  transition: all 0.3s ease;
+}
+
+/* 侧边栏折叠时的样式 */
+.sidebar[style*="width: 64px"] .sidebar-header {
+  padding: 0;
 }
 
 .logo {
   width: 32px;
   height: 32px;
   margin-right: 10px;
+  flex-shrink: 0;
+  transition: margin 0.3s ease;
+}
+
+/* 侧边栏折叠时logo不需要右边距 */
+.sidebar[style*="width: 64px"] .logo {
+  margin-right: 0;
 }
 
 .logo-text {
   color: #fff;
   font-size: 16px;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .el-menu-vertical {
@@ -380,6 +395,15 @@ const handleLogout = () => {
 
 .sidebar-toggle-btn {
   color: #606266;
+  font-size: 20px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f0f0f0;
+  color: #409EFF;
 }
 
 /* 标签页样式 */

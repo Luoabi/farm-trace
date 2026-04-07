@@ -4,7 +4,7 @@
       <!-- 登录表单 -->
       <div v-if="activeForm === 'login'" class="form-container">
         <div class="form-header">
-          <img src="/vite.svg" class="logo" alt="logo" />
+          <img src="/logo.png" class="logo" alt="logo" />
           <h1 class="title">西昌农产品溯源系统</h1>
           <p class="subtitle">登录后台管理系统</p>
         </div>

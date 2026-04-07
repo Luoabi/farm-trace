@@ -138,7 +138,7 @@ const actions = {
           const roleMap = {
             'SUPER_ADMIN': '超级管理员',
             'FARMER': '农户',
-            'OPERATOR': '操作员'
+            'CUSTOMER': '顾客'
           };
           
           // 映射后端状态到前端状态
@@ -169,6 +169,7 @@ const actions = {
             status: statusMap[user.status] || user.status || '启用',
             permissions: backendRole === 'SUPER_ADMIN' ? ['all'] : 
                         backendRole === 'FARMER' ? ['dashboard', 'batch', 'growth', 'product', 'order', 'user'] :
+                        backendRole === 'CUSTOMER' ? ['dashboard'] :
                         ['dashboard', 'batch', 'growth', 'product', 'order']
           };
           
