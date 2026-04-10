@@ -1,0 +1,145 @@
+/* Skyline 渲染引擎样式修复 */
+page {
+  height: 100%;
+  width: 100%;
+}
+
+.container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.tabs {
+  display: flex;
+  background: white;
+  padding: 20rpx;
+  gap: 20rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tab-item {
+  flex-shrink: 0;
+  padding: 12rpx 32rpx;
+  background: #f5f7fa;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.order-list {
+  flex: 1;
+  padding: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.order-item {
+  background: white;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #eee;
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.order-number {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.order-status {
+  font-size: 28rpx;
+  color: #667eea;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.order-products {
+  margin-bottom: 20rpx;
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  width: 100%;
+}
+
+.product-name {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.5;
+}
+
+.product-quantity {
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eee;
+  width: 100%;
+}
+
+.total-amount {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #ff6b6b;
+  line-height: 1.2;
+}
+
+.loading-more,
+.no-more {
+  text-align: center;
+  padding: 40rpx 0;
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.empty {
+  text-align: center;
+  padding: 200rpx 0;
+  width: 100%;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 120rpx;
+  margin-bottom: 20rpx;
+  line-height: 1;
+}
+
+.empty-text {
+  display: block;
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}

@@ -1,0 +1,23 @@
+/**app.wxss**/
+/* 全局样式 */
+page {
+  height: 100%;
+  background-color: #f5f5f5;
+}
+
+/* 通用样式 */
+.page-container {
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 清除默认样式 */
+view, text, image, input, textarea, button {
+  box-sizing: border-box;
+}
+
+/* 按钮样式重置 */
+button::after {
+  border: none;
+}
+ 

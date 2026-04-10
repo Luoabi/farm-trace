@@ -1,0 +1,49 @@
+<view class="container">
+  <view class="address-list" wx:if="{{addressList.length > 0}}">
+    <view 
+      class="address-item" 
+      wx:for="{{addressList}}" 
+      wx:key="id"
+      bindtap="handleSelectAddress"
+      data-address="{{item}}"
+    >
+      <view class="address-header">
+        <text class="receiver">{{item.receiverName}}</text>
+        <text class="phone">{{item.receiverPhone}}</text>
+        <text class="default-tag" wx:if="{{item.isDefault}}">默认</text>
+      </view>
+      <view class="address-detail">
+        {{item.province}}{{item.city}}{{item.district}}{{item.detailAddress}}
+      </view>
+      <view class="address-footer">
+        <view 
+          class="btn-default {{item.isDefault ? 'active' : ''}}" 
+          catchtap="handleSetDefault"
+          data-id="{{item.id}}"
+        >
+          {{item.isDefault ? '默认地址' : '设为默认'}}
+        </view>
+        <view class="actions">
+          <text class="btn-edit" catchtap="handleEdit" data-id="{{item.id}}">编辑</text>
+          <text class="btn-delete" catchtap="handleDelete" data-id="{{item.id}}">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>
+    <text class="empty-icon">📍</text>
+    <text class="empty-text">暂无收货地址</text>
+    <button class="btn-add-empty" bindtap="handleAdd">添加地址</button>
+  </view>
+
+  <view class="footer" wx:if="{{addressList.length > 0}}">
+    <view class="btn-add" bindtap="handleAdd">
+      <text>+ 新增地址</text>
+    </view>
+  </view>
+</view>
+
+<view class="loading" wx:if="{{loading}}">
+  <text>加载中...</text>
+</view>

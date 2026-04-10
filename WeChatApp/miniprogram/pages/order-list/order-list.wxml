@@ -1,0 +1,76 @@
+<view class="container">
+  <!-- 标签栏 -->
+  <view class="tabs">
+    <view 
+      class="tab-item {{currentTab === 'ALL' ? 'active' : ''}}"
+      bindtap="handleTabChange"
+      data-tab="ALL"
+    >
+      全部
+    </view>
+    <view 
+      class="tab-item {{currentTab === 'WAITING_PAYMENT' ? 'active' : ''}}"
+      bindtap="handleTabChange"
+      data-tab="WAITING_PAYMENT"
+    >
+      待支付
+    </view>
+    <view 
+      class="tab-item {{currentTab === 'PAID' ? 'active' : ''}}"
+      bindtap="handleTabChange"
+      data-tab="PAID"
+    >
+      待发货
+    </view>
+    <view 
+      class="tab-item {{currentTab === 'SHIPPED' ? 'active' : ''}}"
+      bindtap="handleTabChange"
+      data-tab="SHIPPED"
+    >
+      待收货
+    </view>
+    <view 
+      class="tab-item {{currentTab === 'DELIVERED' ? 'active' : ''}}"
+      bindtap="handleTabChange"
+      data-tab="DELIVERED"
+    >
+      已完成
+    </view>
+  </view>
+
+  <!-- 订单列表 -->
+  <scroll-view class="order-list" scroll-y>
+    <view 
+      class="order-item"
+      wx:for="{{orderList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="order-header">
+        <text class="order-number">订单号：{{item.orderNumber}}</text>
+        <text class="order-status">{{item.status}}</text>
+      </view>
+      <view class="order-products">
+        <view class="product-item" wx:for="{{item.items}}" wx:key="productId" wx:for-item="product">
+          <text class="product-name">{{product.productName}}</text>
+          <text class="product-quantity">x{{product.quantity}}</text>
+        </view>
+      </view>
+      <view class="order-footer">
+        <text class="total-amount">合计：¥{{item.totalAmount}}</text>
+      </view>
+    </view>
+
+    <view class="loading-more" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+    <view class="no-more" wx:if="{{noMore && orderList.length > 0}}">
+      <text>没有更多了</text>
+    </view>
+    <view class="empty" wx:if="{{orderList.length === 0 && !loading}}">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无订单</text>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="logo-section">
+    <view class="logo">
+      <text class="logo-icon">🌾</text>
+    </view>
+    <text class="title">西昌农产品溯源</text>
+    <text class="subtitle">安全·可信·可追溯</text>
+  </view>
+
+  <view class="form">
+    <view class="form-item">
+      <view class="input-wrapper">
+        <text class="icon">📱</text>
+        <input 
+          class="input"
+          type="text" 
+          placeholder="请输入手机号" 
+          value="{{phone}}"
+          bindinput="onPhoneInput"
+          maxlength="11"
+        />
+      </view>
+    </view>
+    
+    <view class="form-item">
+      <view class="input-wrapper">
+        <text class="icon">🔒</text>
+        <input 
+          class="input"
+          type="password" 
+          placeholder="请输入密码" 
+          value="{{password}}"
+          bindinput="onPasswordInput"
+        />
+      </view>
+    </view>
+
+    <button class="btn-login" bindtap="handleLogin">登录</button>
+    
+    <view class="register-link">
+      <text class="text">还没有账号？</text>
+      <text class="link" bindtap="goToRegister">立即注册</text>
+    </view>
+  </view>
+</view>

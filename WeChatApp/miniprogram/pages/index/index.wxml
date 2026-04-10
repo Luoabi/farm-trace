@@ -1,0 +1,102 @@
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input">
+      <text class="icon">🔍</text>
+      <input 
+        type="text" 
+        placeholder="搜索商品" 
+        value="{{keyword}}"
+        bindinput="onKeywordInput"
+        bindconfirm="handleSearch"
+      />
+    </view>
+    <view class="scan-btn" bindtap="handleScan">
+      <text>📷</text>
+    </view>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view class="category-tabs" scroll-x>
+    <view 
+      class="tab-item {{currentCategory === '' ? 'active' : ''}}"
+      bindtap="handleCategoryChange"
+      data-category=""
+    >
+      全部
+    </view>
+    <view 
+      class="tab-item {{currentCategory === '蔬菜' ? 'active' : ''}}"
+      bindtap="handleCategoryChange"
+      data-category="蔬菜"
+    >
+      蔬菜
+    </view>
+    <view 
+      class="tab-item {{currentCategory === '水果' ? 'active' : ''}}"
+      bindtap="handleCategoryChange"
+      data-category="水果"
+    >
+      水果
+    </view>
+    <view 
+      class="tab-item {{currentCategory === '粮油' ? 'active' : ''}}"
+      bindtap="handleCategoryChange"
+      data-category="粮油"
+    >
+      粮油
+    </view>
+    <view 
+      class="tab-item {{currentCategory === '肉禽蛋' ? 'active' : ''}}"
+      bindtap="handleCategoryChange"
+      data-category="肉禽蛋"
+    >
+      肉禽蛋
+    </view>
+  </scroll-view>
+
+  <!-- 商品列表 -->
+  <scroll-view 
+    class="product-list" 
+    scroll-y
+    bindscrolltolower="loadMore"
+    lower-threshold="100"
+  >
+    <view class="product-grid">
+      <view 
+        class="product-item"
+        wx:for="{{productList}}"
+        wx:key="id"
+        bindtap="goToDetail"
+        data-id="{{item.id}}"
+      >
+        <image class="product-image" src="{{item.imageUrl || '/images/default-product.png'}}" mode="aspectFill"></image>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <text class="product-desc">{{item.description || '新鲜优质'}}</text>
+          <view class="product-footer">
+            <view class="price-box">
+              <text class="price">¥{{item.price}}</text>
+              <text class="unit">/{{item.unit}}</text>
+            </view>
+            <view class="add-cart" catchtap="addToCart" data-id="{{item.id}}">
+              <text>🛒</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载状态 -->
+    <view class="loading-more" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+    <view class="no-more" wx:if="{{noMore && productList.length > 0}}">
+      <text>没有更多了</text>
+    </view>
+    <view class="empty" wx:if="{{productList.length === 0 && !loading}}">
+      <text class="empty-icon">📦</text>
+      <text class="empty-text">暂无商品</text>
+    </view>
+  </scroll-view>
+</view>

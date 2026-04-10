@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="cart-list" wx:if="{{cartList.length > 0}}">
+    <view class="cart-item" wx:for="{{cartList}}" wx:key="productId">
+      <view class="checkbox" bindtap="handleSelectItem" data-index="{{index}}">
+        <text class="icon">{{item.selected ? '✅' : '⭕'}}</text>
+      </view>
+      <image class="product-image" src="{{item.imageUrl || '/images/default-product.png'}}" mode="aspectFill"></image>
+      <view class="product-info">
+        <text class="product-name">{{item.productName}}</text>
+        <view class="price-box">
+          <text class="price">¥{{item.price}}</text>
+          <text class="unit">/{{item.unit}}</text>
+        </view>
+        <view class="quantity-box">
+          <view class="btn-minus" bindtap="handleQuantityChange" data-index="{{index}}" data-type="minus">-</view>
+          <text class="quantity">{{item.quantity}}</text>
+          <view class="btn-plus" bindtap="handleQuantityChange" data-index="{{index}}" data-type="plus">+</view>
+        </view>
+      </view>
+      <view class="btn-delete" bindtap="handleDelete" data-index="{{index}}">
+        <text>🗑️</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>
+    <text class="empty-icon">🛒</text>
+    <text class="empty-text">购物车是空的</text>
+    <button class="btn-go-shop" bindtap="goToIndex">去逛逛</button>
+  </view>
+
+  <view class="footer" wx:if="{{cartList.length > 0}}">
+    <view class="select-all" bindtap="handleSelectAll">
+      <text class="icon">{{allSelected ? '✅' : '⭕'}}</text>
+      <text class="text">全选</text>
+    </view>
+    <view class="total-box">
+      <text class="label">合计：</text>
+      <text class="price">¥{{totalPrice.toFixed(2)}}</text>
+    </view>
+    <view class="btn-checkout" bindtap="handleCheckout">
+      <text>结算</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,176 @@
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 20rpx;
+  padding-bottom: 120rpx;
+}
+
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  width: 100%;
+}
+
+.address-item {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.address-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
+  flex-wrap: wrap;
+}
+
+.receiver {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.4;
+}
+
+.phone {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.default-tag {
+  padding: 4rpx 12rpx;
+  background: #67c23a;
+  color: white;
+  font-size: 22rpx;
+  border-radius: 4rpx;
+  line-height: 1.5;
+}
+
+.address-detail {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
+.address-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eee;
+  width: 100%;
+}
+
+.btn-default {
+  padding: 8rpx 24rpx;
+  background: #f5f7fa;
+  color: #666;
+  font-size: 26rpx;
+  border-radius: 20rpx;
+  line-height: 1.5;
+}
+
+.btn-default.active {
+  background: #67c23a;
+  color: white;
+}
+
+.actions {
+  display: flex;
+  gap: 30rpx;
+}
+
+.btn-edit,
+.btn-delete {
+  font-size: 26rpx;
+  color: #667eea;
+  line-height: 1.5;
+}
+
+.btn-delete {
+  color: #ff6b6b;
+}
+
+.empty {
+  text-align: center;
+  padding: 200rpx 0;
+  width: 100%;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 120rpx;
+  margin-bottom: 20rpx;
+  line-height: 1;
+}
+
+.empty-text {
+  display: block;
+  font-size: 28rpx;
+  color: #999;
+  margin-bottom: 40rpx;
+  line-height: 1.5;
+}
+
+.btn-add-empty {
+  width: 300rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 28rpx;
+  border-radius: 40rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add-empty::after {
+  border: none;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 120rpx;
+  background: white;
+  display: flex;
+  align-items: center;
+  padding: 0 30rpx;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.btn-add {
+  width: 100%;
+  height: 80rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}

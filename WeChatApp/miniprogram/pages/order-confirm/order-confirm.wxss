@@ -1,0 +1,286 @@
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 120rpx;
+}
+
+.address-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.address-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.address-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
+  flex-wrap: wrap;
+}
+
+.receiver {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.4;
+}
+
+.phone {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.default-tag {
+  padding: 4rpx 12rpx;
+  background: #67c23a;
+  color: white;
+  font-size: 22rpx;
+  border-radius: 4rpx;
+  line-height: 1.5;
+}
+
+.address-detail {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.no-address {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.no-address .icon {
+  font-size: 40rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.no-address .text {
+  font-size: 28rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.arrow {
+  font-size: 48rpx;
+  color: #ccc;
+  margin-left: 20rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.goods-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  line-height: 1.4;
+}
+
+.goods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  width: 100%;
+}
+
+.goods-item {
+  display: flex;
+  gap: 20rpx;
+  width: 100%;
+}
+
+.goods-image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  background: #f5f5f5;
+  flex-shrink: 0;
+  display: block;
+}
+
+.goods-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.goods-name {
+  font-size: 28rpx;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.goods-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.goods-price {
+  font-size: 28rpx;
+  color: #ff6b6b;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.goods-quantity {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.delivery-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.delivery-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.value {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.5;
+}
+
+.remark-section {
+  background: white;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.remark-label {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+  line-height: 1.5;
+}
+
+.remark-input {
+  width: 100%;
+  min-height: 150rpx;
+  padding: 20rpx;
+  background: #f5f7fa;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.price-section {
+  background: white;
+  padding: 30rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  width: 100%;
+}
+
+.price-item:last-child {
+  margin-bottom: 0;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 120rpx;
+  background: white;
+  display: flex;
+  align-items: center;
+  padding: 0 30rpx;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.total-box {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+}
+
+.total-box .label {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+.amount {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #ff6b6b;
+  line-height: 1.2;
+}
+
+.btn-submit {
+  width: 240rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.btn-submit.disabled {
+  opacity: 0.6;
+}
