@@ -9,12 +9,16 @@ import { Product, ProductListRequest, ProductListResponse } from '../types/produ
  * 获取商品列表
  */
 export async function getProductList(params: ProductListRequest): Promise<ProductListResponse> {
+  console.log('=== 商品列表请求开始 ===');
+  console.log('发送商品列表请求，参数:', JSON.stringify(params));
+  
   const response = await post('/product/list', params);
   
-  console.log('API返回的商品列表:', response);
+  console.log('API返回的原始数据:', JSON.stringify(response));
+  console.log('返回的商品数量:', response.list ? response.list.length : 0);
   
   // 映射后端字段到前端类型
-  return {
+  const result = {
     ...response,
     list: response.list.map((item: any) => ({
       id: item.id,
@@ -32,6 +36,11 @@ export async function getProductList(params: ProductListRequest): Promise<Produc
       updatedAt: item.updateTime || item.updatedAt
     }))
   };
+  
+  console.log('映射后的商品数量:', result.list.length);
+  console.log('=== 商品列表请求结束 ===');
+  
+  return result;
 }
 
 /**

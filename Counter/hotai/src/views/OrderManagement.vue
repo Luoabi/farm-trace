@@ -73,10 +73,11 @@
             <el-form-item label="订单状态">
               <el-select v-model="searchForm.status" placeholder="请选择订单状态">
                 <el-option label="全部" :value="null" />
-                <el-option label="待支付" :value="1" />
-                <el-option label="待发货" :value="2" />
-                <el-option label="已发货" :value="3" />
-                <el-option label="已完成" :value="4" />
+                <el-option label="待支付" value="0" />
+                <el-option label="待发货" value="1" />
+                <el-option label="待收货" value="2" />
+                <el-option label="已完成" value="3" />
+                <el-option label="已取消" value="4" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -144,14 +145,19 @@
             <el-button type="link" size="small" @click="handleViewOrder(scope.row)">
               查看
             </el-button>
-            <template v-if="scope.row.orderStatus === 2">
+            <template v-if="scope.row.orderStatus === '1'">
               <el-button type="link" size="small" @click="handleShipOrder(scope.row)">
                 发货
               </el-button>
             </template>
-            <template v-else-if="scope.row.orderStatus === 1">
+            <template v-else-if="scope.row.orderStatus === '0'">
               <el-button type="link" size="small" @click="handleCancelOrder(scope.row)">
                 取消
+              </el-button>
+            </template>
+            <template v-else-if="scope.row.orderStatus === '3' || scope.row.orderStatus === '4'">
+              <el-button type="link" size="small" @click="handleDeleteOrder(scope.row)" style="color: #f56c6c;">
+                删除
               </el-button>
             </template>
           </template>
@@ -237,8 +243,11 @@
       </div>
       <template #footer>
         <el-button @click="handleCloseDetail">关闭</el-button>
-        <template v-if="currentOrder && currentOrder.orderStatus === 2">
+        <template v-if="currentOrder && currentOrder.orderStatus === '1'">
           <el-button type="primary" @click="handleShipOrder(currentOrder)">发货</el-button>
+        </template>
+        <template v-if="currentOrder && (currentOrder.orderStatus === '3' || currentOrder.orderStatus === '4')">
+          <el-button type="danger" @click="handleDeleteOrder(currentOrder)">删除订单</el-button>
         </template>
       </template>
     </el-dialog>
@@ -301,6 +310,11 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Download, Refresh, Document, Money, Timer, SoldOut, View, Close } from '@element-plus/icons-vue';
 import { orderAPI } from '../api/modules/order';
 
+// 当前用户信息
+const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
+const farmerId = userInfo?.id || null;
+const userRole = userInfo?.role || '';
+
 // 状态定义
 const loading = ref(false);
 const shipping = ref(false);
@@ -357,16 +371,48 @@ const shipRules = {
 const initData = async () => {
   loading.value = true;
   try {
-    // 尝试从API获取数据
-    const response = await orderAPI.getOrderList({
+    // 构建查询参数
+    const params = {
       page: pagination.currentPage,
       pageSize: pagination.pageSize,
-      ...searchForm
-    });
+      keyword: searchForm.orderId || searchForm.productName || ''
+    };
+    
+    console.log('=== 订单查询参数（前端） ===');
+    console.log('farmerId:', farmerId);
+    console.log('userRole:', userRole);
+    console.log('params:', params);
+    console.log('========================');
+    
+    let response;
+    
+    // 超级管理员查看所有订单，农户只查看自己的订单
+    if (userRole === '超级管理员' || userRole === 'ADMIN') {
+      response = await orderAPI.getOrderList(params);
+    } else {
+      // 农户只查看自己的订单
+      if (!farmerId) {
+        ElMessage.error('无法获取用户信息，请重新登录');
+        orderList.value = [];
+        pagination.total = 0;
+        loading.value = false;
+        return;
+      }
+      response = await orderAPI.getOrdersByFarmer(params, farmerId);
+    }
+    
+    console.log('=== 订单查询响应 ===');
+    console.log('response:', response);
+    console.log('==================');
+    
     orderList.value = response.list || [];
     pagination.total = response.total || 0;
+    
+    // 更新统计数据
+    updateStats(response.list || []);
   } catch (error) {
     console.error('获取订单数据失败:', error);
+    ElMessage.error('获取订单数据失败: ' + (error.message || '未知错误'));
     orderList.value = [];
     pagination.total = 0;
   } finally {
@@ -374,13 +420,22 @@ const initData = async () => {
   }
 };
 
+// 更新统计数据
+const updateStats = (orders) => {
+  stats.totalOrders = orders.length;
+  stats.totalSales = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+  stats.pendingPayment = orders.filter(order => order.orderStatus === '0').length;
+  stats.pendingDelivery = orders.filter(order => order.orderStatus === '1').length;
+};
+
 // 获取状态文本
 const getStatusText = (status) => {
   const statusMap = {
-    1: '待支付',
-    2: '待发货',
-    3: '已发货',
-    4: '已完成'
+    '0': '待支付',
+    '1': '待发货',
+    '2': '待收货',
+    '3': '已完成',
+    '4': '已取消'
   };
   return statusMap[status] || '未知';
 };
@@ -388,10 +443,11 @@ const getStatusText = (status) => {
 // 获取状态标签类型
 const getStatusTag = (status) => {
   const statusMap = {
-    1: 'warning',   // 待支付
-    2: 'danger',    // 待发货
-    3: 'primary',   // 已发货
-    4: 'success'    // 已完成
+    '0': 'warning',   // 待支付
+    '1': 'danger',    // 待发货
+    '2': 'primary',   // 待收货
+    '3': 'success',   // 已完成
+    '4': 'info'       // 已取消
   };
   return statusMap[status] || 'default';
 };
@@ -475,7 +531,7 @@ const handleCloseDetail = () => {
 const handleShipOrder = (order) => {
   shipOrderInfo.value = order;
   Object.assign(shipForm, {
-    orderId: order.orderId,
+    orderId: order.id,  // 使用 order.id 而不是 order.orderId
     logisticsCompany: '',
     trackingNumber: '',
     remark: ''
@@ -493,42 +549,105 @@ const handleCloseShipDialog = () => {
 };
 
 // 确认发货
-const handleConfirmShip = () => {
-  shipFormRef.value.validate((valid) => {
+const handleConfirmShip = async () => {
+  if (!shipFormRef.value) return;
+  
+  shipFormRef.value.validate(async (valid) => {
     if (valid) {
-      shipping.value = true;
-      setTimeout(() => {
-        // 更新订单状态
-        const index = orderList.value.findIndex(item => item.orderId === shipForm.orderId);
-        if (index > -1) {
-          orderList.value[index].status = '待收货';
-          orderList.value[index].shipTime = new Date().toLocaleString('zh-CN');
-        }
+      try {
+        shipping.value = true;
         
-        // 更新统计数据
-        stats.pendingDelivery--;
+        console.log('发货参数:', {
+          id: shipForm.orderId,
+          logisticsCompany: shipForm.logisticsCompany,
+          trackingNumber: shipForm.trackingNumber
+        });
+        
+        // 调用后端API更新物流信息
+        await orderAPI.updateShippingInfo(
+          shipForm.orderId,
+          shipForm.logisticsCompany,
+          shipForm.trackingNumber
+        );
         
         ElMessage.success('发货成功');
         handleCloseShipDialog();
+        
+        // 刷新订单列表
+        await initData();
+        
+        // 如果订单详情对话框打开，也刷新详情
+        if (orderDetailVisible.value && currentOrder.value) {
+          const response = await orderAPI.getOrderDetail(currentOrder.value.id);
+          currentOrder.value = response;
+        }
+      } catch (error) {
+        console.error('发货失败:', error);
+        ElMessage.error('发货失败: ' + (error.message || '未知错误'));
+      } finally {
         shipping.value = false;
-      }, 1000);
+      }
     }
   });
 };
 
 // 取消订单
-const handleCancelOrder = (row) => {
-  ElMessageBox.confirm(`确定要取消订单「${row.orderId}」吗？`, '取消订单确认', {
+const handleCancelOrder = async (row) => {
+  ElMessageBox.confirm(`确定要取消订单「${row.orderNumber}」吗？`, '取消订单确认', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    row.status = '已取消';
-    // 更新统计数据
-    stats.pendingPayment--;
-    ElMessage.success('订单取消成功');
+  }).then(async () => {
+    try {
+      // 调用后端API取消订单
+      await orderAPI.cancelOrder(row.id, '农户取消订单');
+      
+      ElMessage.success('订单取消成功');
+      
+      // 刷新订单列表
+      await initData();
+    } catch (error) {
+      console.error('取消订单失败:', error);
+      ElMessage.error('取消订单失败: ' + (error.message || '未知错误'));
+    }
   }).catch(() => {
-    // 取消操作
+    // 用户取消操作
+  });
+};
+
+// 删除订单
+const handleDeleteOrder = async (row) => {
+  ElMessageBox.confirm(
+    `确定要删除订单「${row.orderNumber}」吗？删除后将无法恢复！`, 
+    '删除订单确认', 
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'error',
+      confirmButtonClass: 'el-button--danger'
+    }
+  ).then(async () => {
+    try {
+      console.log('删除订单ID:', row.id);
+      
+      // 调用后端API删除订单
+      await orderAPI.deleteOrder(row.id);
+      
+      ElMessage.success('订单删除成功');
+      
+      // 如果订单详情对话框打开，关闭它
+      if (orderDetailVisible.value) {
+        handleCloseDetail();
+      }
+      
+      // 刷新订单列表
+      await initData();
+    } catch (error) {
+      console.error('删除订单失败:', error);
+      ElMessage.error('删除订单失败: ' + (error.message || '未知错误'));
+    }
+  }).catch(() => {
+    // 用户取消操作
   });
 };
 

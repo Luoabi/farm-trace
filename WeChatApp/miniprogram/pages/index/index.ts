@@ -35,25 +35,45 @@ Page({
   },
 
   async loadProducts(refresh = false) {
-    if (this.data.loading || this.data.noMore) return;
+    // 如果正在加载，跳过（但 refresh 时允许）
+    if (this.data.loading && !refresh) return;
+    
+    // 如果没有更多数据且不是刷新操作，跳过
+    if (this.data.noMore && !refresh) return;
 
     if (refresh) {
       this.setData({
         page: 1,
         productList: [],
-        noMore: false
+        noMore: false,
+        loading: false  // 重置 loading 状态
       });
     }
 
     this.setData({ loading: true });
 
     try {
-      const res = await getProductList({
-        page: this.data.page,
-        pageSize: this.data.pageSize,
-        category: this.data.currentCategory || undefined,
-        keyword: this.data.keyword || undefined
-      });
+      // 构建请求参数 - 只有非空字符串才传递
+      const params: any = {
+        page: refresh ? 1 : this.data.page,
+        pageSize: this.data.pageSize
+      };
+      
+      // 只有当 category 不为空字符串时才添加
+      if (this.data.currentCategory && this.data.currentCategory.trim() !== '') {
+        params.category = this.data.currentCategory;
+      }
+      
+      // 只有当 keyword 不为空字符串时才添加
+      if (this.data.keyword && this.data.keyword.trim() !== '') {
+        params.keyword = this.data.keyword;
+      }
+      
+      console.log('发送请求参数:', params);
+      
+      const res = await getProductList(params);
+      
+      console.log('收到响应数据:', res);
 
       const newList = refresh ? res.list : [...this.data.productList, ...res.list];
       
@@ -61,10 +81,13 @@ Page({
         productList: newList,
         loading: false,
         noMore: res.list.length < this.data.pageSize,
-        page: this.data.page + 1
+        page: refresh ? 2 : this.data.page + 1
       });
+      
+      console.log('更新后的商品列表数量:', newList.length);
     } catch (error: any) {
       this.setData({ loading: false });
+      console.error('加载商品失败:', error);
       wx.showToast({
         title: error.message || '加载失败',
         icon: 'none'
@@ -77,13 +100,47 @@ Page({
   },
 
   handleSearch() {
-    this.loadProducts(true);
+    console.log('搜索关键词:', this.data.keyword);
+    
+    if (!this.data.keyword.trim()) {
+      wx.showToast({
+        title: '请输入搜索关键词',
+        icon: 'none',
+        duration: 1500
+      });
+      return;
+    }
+    
+    // 使用回调确保 setData 完成后再加载
+    this.setData({
+      currentCategory: '' // 搜索时清空分类
+    }, () => {
+      this.loadProducts(true);
+    });
+  },
+
+  handleClearSearch() {
+    console.log('清空搜索');
+    this.setData({ 
+      keyword: '',
+      currentCategory: ''
+    }, () => {
+      this.loadProducts(true);
+    });
   },
 
   handleCategoryChange(e: any) {
     const category = e.currentTarget.dataset.category;
-    this.setData({ currentCategory: category });
-    this.loadProducts(true);
+    console.log('选择分类:', category);
+    console.log('当前状态 - keyword:', this.data.keyword, 'currentCategory:', this.data.currentCategory);
+    
+    this.setData({ 
+      currentCategory: category,
+      keyword: '' // 切换分类时清空搜索
+    }, () => {
+      console.log('设置后的状态 - currentCategory:', this.data.currentCategory);
+      this.loadProducts(true);
+    });
   },
 
   loadMore() {

@@ -2,7 +2,7 @@
  * 订单相关接口
  */
 
-import { get, post, put } from '../utils/request';
+import { get, post, put, del } from '../utils/request';
 
 export interface CreateOrderData {
   customerId: string;
@@ -104,4 +104,18 @@ export function updateOrderStatus(id: string, status: string): Promise<OrderInfo
   return put(`/order/update-status/${id}`, null, {
     params: { status }
   });
+}
+
+/**
+ * 支付订单
+ */
+export function payOrder(id: string): Promise<OrderInfo> {
+  return post(`/order/pay/${id}`);
+}
+
+/**
+ * 删除订单
+ */
+export function deleteOrder(id: string): Promise<boolean> {
+  return del(`/order/delete/${id}`);
 }

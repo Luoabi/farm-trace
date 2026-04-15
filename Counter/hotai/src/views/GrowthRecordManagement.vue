@@ -249,13 +249,29 @@
             placeholder="请输入详细描述，如：浇水情况、施肥情况等"
           />
         </el-form-item>
-        <el-form-item label="图片URL">
-          <el-input
-            v-model="recordForm.imageUrls"
-            type="textarea"
-            :rows="2"
-            placeholder="请输入图片URL，多个URL用逗号分隔"
-          />
+        <el-form-item label="记录图片">
+          <el-upload 
+            v-model:file-list="uploadFileList" 
+            class="record-image-uploader" 
+            action="#" 
+            :auto-upload="false"
+            :limit="5" 
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            list-type="picture-card"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+          >
+            <el-icon v-if="!uploadingImages"><Plus /></el-icon>
+            <el-icon v-else class="is-loading"><Loading /></el-icon>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持 JPG/PNG/GIF/WEBP 格式，最多上传 5 张图片，每张最大 10MB
+              </div>
+            </template>
+          </el-upload>
+          <div v-if="uploadedImageUrls.length > 0" class="image-preview-info">
+            <el-text type="success">✓ 已上传 {{ uploadedImageUrls.length }} 张图片</el-text>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -269,9 +285,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, RefreshLeft, View, EditPen, Delete, Upload } from '@element-plus/icons-vue';
+import { Plus, Search, RefreshLeft, View, EditPen, Delete, Upload, Loading } from '@element-plus/icons-vue';
 import { growthRecordAPI } from '../api/modules/growthRecord';
 import { batchAPI } from '../api/modules/batch';
+import { uploadAPI } from '../api/modules/upload';
 
 // 当前用户信息
 const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
@@ -289,6 +306,8 @@ const recordDetailVisible = ref(false);
 const recordFormVisible = ref(false);
 const isEdit = ref(false);
 const uploadFileList = ref([]);
+const uploadingImages = ref(false);
+const uploadedImageUrls = ref([]);
 
 // 批次选项（从批次数据中获取）
 const batchOptions = ref([]);
@@ -296,13 +315,26 @@ const batchOptions = ref([]);
 // 获取批次列表
 const getBatchOptions = async () => {
   try {
-    const response = await batchAPI.getBatchList({ page: 1, pageSize: 100 });
+    let response;
+    
+    // 超级管理员可以看到所有批次，农户只能看到自己的批次
+    if (userRole === '超级管理员') {
+      response = await batchAPI.getBatchList({ page: 1, pageSize: 100 });
+    } else {
+      // 农户只加载自己的批次
+      response = await batchAPI.getBatchListByFarmer(farmerId, { page: 1, pageSize: 100 });
+    }
+    
     batchOptions.value = response.list.map(batch => ({
       id: batch.id,
-      name: batch.batchNumber || batch.name
+      name: `${batch.batchNumber} - ${batch.productName || ''}`.trim()
     }));
+    
+    console.log('批次选项加载成功:', batchOptions.value.length, '个批次');
   } catch (error) {
+    console.error('获取批次列表失败:', error);
     ElMessage.error('获取批次列表失败: ' + (error.message || '未知错误'));
+    batchOptions.value = [];
   }
 };
 
@@ -476,14 +508,64 @@ const handleBatchSelect = (batch) => {
   recordForm.batchName = batch.name;
 };
 
-// 文件变化处理
-const handleFileChange = (uploadFile, uploadFiles) => {
+// 文件变化处理（图片上传）
+const handleFileChange = async (uploadFile, uploadFiles) => {
+  if (uploadFile.raw) {
+    try {
+      uploadingImages.value = true;
+      
+      // 调用上传 API
+      const response = await uploadAPI.uploadImage(uploadFile.raw);
+      
+      if (response.success) {
+        // 上传成功，添加到已上传列表
+        uploadedImageUrls.value.push(response.url);
+        
+        // 更新表单中的 imageUrls（用逗号分隔）
+        recordForm.imageUrls = uploadedImageUrls.value.join(',');
+        
+        ElMessage.success('图片上传成功');
+        console.log('图片上传成功:', response.url);
+      } else {
+        ElMessage.error(response.message || '图片上传失败');
+        // 移除失败的文件
+        const index = uploadFiles.findIndex(f => f.uid === uploadFile.uid);
+        if (index > -1) {
+          uploadFiles.splice(index, 1);
+        }
+      }
+    } catch (error) {
+      console.error('图片上传失败:', error);
+      ElMessage.error('图片上传失败: ' + (error.message || '未知错误'));
+      // 移除失败的文件
+      const index = uploadFiles.findIndex(f => f.uid === uploadFile.uid);
+      if (index > -1) {
+        uploadFiles.splice(index, 1);
+      }
+    } finally {
+      uploadingImages.value = false;
+    }
+  }
+  
   uploadFileList.value = uploadFiles;
 };
 
 // 文件移除处理
 const handleFileRemove = (uploadFile, uploadFiles) => {
+  // 从已上传列表中移除
+  const urlToRemove = uploadFile.url || uploadFile.response?.url;
+  if (urlToRemove) {
+    const index = uploadedImageUrls.value.indexOf(urlToRemove);
+    if (index > -1) {
+      uploadedImageUrls.value.splice(index, 1);
+    }
+  }
+  
+  // 更新表单中的 imageUrls
+  recordForm.imageUrls = uploadedImageUrls.value.join(',');
+  
   uploadFileList.value = uploadFiles;
+  ElMessage.success('图片已移除');
 };
 
 // 查看记录详情
@@ -525,6 +607,7 @@ const handleCreateRecord = () => {
     imageUrls: ''
   });
   uploadFileList.value = [];
+  uploadedImageUrls.value = [];
   recordFormVisible.value = true;
 };
 
@@ -549,6 +632,21 @@ const handleEditRecord = (row) => {
     description: row.description,
     imageUrls: row.imageUrls || ''
   });
+  
+  // 如果有图片，显示在上传组件中
+  if (row.imageUrls) {
+    const urls = row.imageUrls.split(',').map(url => url.trim()).filter(url => url);
+    uploadedImageUrls.value = urls;
+    uploadFileList.value = urls.map((url, index) => ({
+      name: `image-${index + 1}.jpg`,
+      url: url,
+      uid: Date.now() + index
+    }));
+  } else {
+    uploadFileList.value = [];
+    uploadedImageUrls.value = [];
+  }
+  
   recordFormVisible.value = true;
 };
 
@@ -556,6 +654,7 @@ const handleEditRecord = (row) => {
 const handleCloseForm = () => {
   recordFormVisible.value = false;
   uploadFileList.value = [];
+  uploadedImageUrls.value = [];
   if (recordFormRef.value) {
     recordFormRef.value.resetFields();
   }
@@ -702,6 +801,30 @@ onMounted(async () => {
 .record-form {
   max-height: 60vh;
   overflow-y: auto;
+}
+
+/* 图片上传样式 */
+.record-image-uploader .el-upload {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+
+.record-image-uploader .el-upload:hover {
+  border-color: var(--el-color-primary);
+}
+
+.record-image-uploader .el-icon.is-loading {
+  font-size: 28px;
+  color: var(--el-color-primary);
+}
+
+.image-preview-info {
+  margin-top: 8px;
+  font-size: 14px;
 }
 
 /* 响应式设计 */

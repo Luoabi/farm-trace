@@ -5,11 +5,17 @@
       <text class="icon">🔍</text>
       <input 
         type="text" 
-        placeholder="搜索商品" 
+        placeholder="搜索商品名称、分类等" 
         value="{{keyword}}"
         bindinput="onKeywordInput"
         bindconfirm="handleSearch"
       />
+      <view class="clear-btn" bindtap="handleClearSearch" wx:if="{{keyword}}">
+        <text>✕</text>
+      </view>
+      <view class="search-btn" bindtap="handleSearch" wx:if="{{keyword}}">
+        <text>搜索</text>
+      </view>
     </view>
     <view class="scan-btn" bindtap="handleScan">
       <text>📷</text>

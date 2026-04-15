@@ -75,3 +75,13 @@ export function getTraceInfo(batchNumber: string): Promise<TraceInfo> {
 export function verifyTransaction(txHash: string): Promise<BlockchainVerification> {
   return get(`/trace/verify/${txHash}`);
 }
+
+/**
+ * 生成批次二维码
+ */
+export function generateQRCode(batchNumber: string): Promise<{
+  batchNumber: string;
+  qrCode: string;
+}> {
+  return get(`/trace/qrcode/${batchNumber}`);
+}

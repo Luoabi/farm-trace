@@ -8,31 +8,34 @@
     >
       全部
     </view>
+
     <view 
-      class="tab-item {{currentTab === 'WAITING_PAYMENT' ? 'active' : ''}}"
+      class="tab-item {{currentTab === '0' ? 'active' : ''}}"
       bindtap="handleTabChange"
-      data-tab="WAITING_PAYMENT"
+      data-tab="0"
     >
       待支付
     </view>
+
     <view 
-      class="tab-item {{currentTab === 'PAID' ? 'active' : ''}}"
+      class="tab-item {{currentTab === '1' ? 'active' : ''}}"
       bindtap="handleTabChange"
-      data-tab="PAID"
+      data-tab="1"
     >
       待发货
     </view>
+    
     <view 
-      class="tab-item {{currentTab === 'SHIPPED' ? 'active' : ''}}"
+      class="tab-item {{currentTab === '2' ? 'active' : ''}}"
       bindtap="handleTabChange"
-      data-tab="SHIPPED"
+      data-tab="2"
     >
       待收货
     </view>
     <view 
-      class="tab-item {{currentTab === 'DELIVERED' ? 'active' : ''}}"
+      class="tab-item {{currentTab === '3' ? 'active' : ''}}"
       bindtap="handleTabChange"
-      data-tab="DELIVERED"
+      data-tab="3"
     >
       已完成
     </view>
@@ -44,21 +47,85 @@
       class="order-item"
       wx:for="{{orderList}}"
       wx:key="id"
-      bindtap="goToDetail"
-      data-id="{{item.id}}"
     >
       <view class="order-header">
         <text class="order-number">订单号：{{item.orderNumber}}</text>
-        <text class="order-status">{{item.status}}</text>
+        <text class="order-status status-{{item.orderStatus}}">{{statusMap[item.orderStatus]}}</text>
       </view>
-      <view class="order-products">
-        <view class="product-item" wx:for="{{item.items}}" wx:key="productId" wx:for-item="product">
-          <text class="product-name">{{product.productName}}</text>
-          <text class="product-quantity">x{{product.quantity}}</text>
+      
+      <view class="order-content" bindtap="goToDetail" data-id="{{item.id}}">
+        <view class="product-info">
+          <text class="product-name">{{item.productName}}</text>
+          <view class="product-detail">
+            <text class="product-price">¥{{item.productPrice}}</text>
+            <text class="product-quantity">x{{item.quantity}}</text>
+          </view>
+        </view>
+        
+        <view class="order-info">
+          <text class="info-item">农户：{{item.farmerName}}</text>
+          <text class="info-item">批次：{{item.batchNumber}}</text>
         </view>
       </view>
+      
       <view class="order-footer">
-        <text class="total-amount">合计：¥{{item.totalAmount}}</text>
+        <view class="total-box">
+          <text class="total-label">合计：</text>
+          <text class="total-amount">¥{{item.totalPrice}}</text>
+        </view>
+        
+        <view class="action-buttons">
+          <!-- 待支付：取消订单 + 立即支付 -->
+          <view 
+            wx:if="{{item.orderStatus === '0'}}"
+            class="btn btn-cancel"
+            catchtap="handleCancelOrder"
+            data-id="{{item.id}}"
+            data-number="{{item.orderNumber}}"
+          >
+            取消订单
+          </view>
+          <view 
+            wx:if="{{item.orderStatus === '0'}}"
+            class="btn btn-primary"
+            catchtap="handlePayOrder"
+            data-id="{{item.id}}"
+            data-price="{{item.totalPrice}}"
+          >
+            立即支付
+          </view>
+          
+          <!-- 待收货：确认收货 -->
+          <view 
+            wx:if="{{item.orderStatus === '2'}}"
+            class="btn btn-primary"
+            catchtap="handleConfirmReceipt"
+            data-id="{{item.id}}"
+            data-number="{{item.orderNumber}}"
+          >
+            确认收货
+          </view>
+          
+          <!-- 已完成/已取消：删除订单 -->
+          <view 
+            wx:if="{{item.orderStatus === '3' || item.orderStatus === '4'}}"
+            class="btn btn-delete"
+            catchtap="handleDeleteOrder"
+            data-id="{{item.id}}"
+            data-number="{{item.orderNumber}}"
+          >
+            删除订单
+          </view>
+          
+          <!-- 查看详情按钮 -->
+          <view 
+            class="btn btn-detail"
+            catchtap="goToDetail"
+            data-id="{{item.id}}"
+          >
+            查看详情
+          </view>
+        </view>
       </view>
     </view>
 

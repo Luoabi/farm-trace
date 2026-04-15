@@ -1,3 +1,247 @@
-<view class="container">
-  <text>溯源查询页 - 开发中</text>
+<view class="trace-container">
+  <!-- 查询区域 -->
+  <view class="query-section" wx:if="{{!showResult}}">
+    <view class="query-header">
+      <image class="logo" src="/pages/logo.png" mode="aspectFit"></image>
+      <text class="title">农产品溯源查询</text>
+      <text class="subtitle">扫码或输入批次号查询产品溯源信息</text>
+    </view>
+
+    <view class="query-content">
+      <!-- 扫码按钮 -->
+      <view class="scan-button" bindtap="scanCode">
+        <view class="scan-icon">📷</view>
+        <text class="scan-text">扫描二维码查询</text>
+      </view>
+
+      <!-- 分隔线 -->
+      <view class="divider">
+        <view class="divider-line"></view>
+        <text class="divider-text">或</text>
+        <view class="divider-line"></view>
+      </view>
+
+      <!-- 手动输入 -->
+      <view class="input-section">
+        <input 
+          class="batch-input" 
+          placeholder="请输入批次号" 
+          value="{{batchNumber}}"
+          bindinput="onBatchNumberInput"
+        />
+        <button 
+          class="query-button" 
+          bindtap="queryTrace"
+          loading="{{loading}}"
+        >
+          查询
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 结果区域 -->
+  <view class="result-section" wx:if="{{showResult && traceInfo}}">
+    <!-- 头部 -->
+    <view class="result-header">
+      <view class="header-content">
+        <text class="product-name">{{traceInfo.batchInfo.productName}}</text>
+        <text class="batch-number">批次号: {{traceInfo.batchInfo.batchNumber}}</text>
+      </view>
+      <view class="reset-button" bindtap="resetQuery">
+        <text>重新查询</text>
+      </view>
+    </view>
+
+    <!-- 区块链验证状态 -->
+    <view class="verification-banner {{traceInfo.verification.isVerified ? 'verified' : 'unverified'}}">
+      <text class="verification-icon">{{traceInfo.verification.isVerified ? '✓' : '⚠'}}</text>
+      <text class="verification-text">{{traceInfo.verification.message}}</text>
+    </view>
+
+    <!-- 标签页 -->
+    <view class="tabs">
+      <view 
+        class="tab-item {{activeTab === 'batch' ? 'active' : ''}}" 
+        data-tab="batch"
+        bindtap="switchTab"
+      >
+        批次信息
+      </view>
+      <view 
+        class="tab-item {{activeTab === 'growth' ? 'active' : ''}}" 
+        data-tab="growth"
+        bindtap="switchTab"
+      >
+        生长记录
+      </view>
+      <view 
+        class="tab-item {{activeTab === 'blockchain' ? 'active' : ''}}" 
+        data-tab="blockchain"
+        bindtap="switchTab"
+      >
+        区块链验证
+      </view>
+    </view>
+
+    <!-- 批次信息 -->
+    <view class="tab-content" wx:if="{{activeTab === 'batch'}}">
+      <view class="info-card">
+        <view class="info-item">
+          <text class="info-label">产品名称</text>
+          <text class="info-value">{{traceInfo.batchInfo.productName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">批次编号</text>
+          <text class="info-value">{{traceInfo.batchInfo.batchNumber}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">农户信息</text>
+          <text class="info-value">{{traceInfo.batchInfo.farmerName}} ({{traceInfo.batchInfo.organization}})</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">农场名称</text>
+          <text class="info-value">{{traceInfo.batchInfo.farmName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">农场地址</text>
+          <text class="info-value">{{traceInfo.batchInfo.farmAddress}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">种植面积</text>
+          <text class="info-value">{{traceInfo.batchInfo.cultivationArea}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">种植时间</text>
+          <text class="info-value">{{traceInfo.batchInfo.plantingTime}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">收获时间</text>
+          <text class="info-value">{{traceInfo.batchInfo.harvestTime}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">计划产量</text>
+          <text class="info-value">{{traceInfo.batchInfo.plannedQuantity}} kg</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">实际产量</text>
+          <text class="info-value">{{traceInfo.batchInfo.actualQuantity}} kg</text>
+        </view>
+        <view class="info-item" wx:if="{{traceInfo.batchInfo.remark}}">
+          <text class="info-label">备注</text>
+          <text class="info-value">{{traceInfo.batchInfo.remark}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 生长记录 -->
+    <view class="tab-content" wx:if="{{activeTab === 'growth'}}">
+      <view class="timeline">
+        <view class="timeline-item" wx:for="{{traceInfo.growthRecords}}" wx:key="id">
+          <view class="timeline-dot"></view>
+          <view class="timeline-content">
+            <view class="record-header">
+              <text class="record-stage">{{item.growthStage}}</text>
+              <text class="record-time">{{item.recordTime}}</text>
+            </view>
+            
+            <view class="record-details">
+              <view class="detail-row" wx:if="{{item.temperature}}">
+                <text class="detail-label">🌡️ 温度:</text>
+                <text class="detail-value">{{item.temperature}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.humidity}}">
+                <text class="detail-label">💧 湿度:</text>
+                <text class="detail-value">{{item.humidity}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.weather}}">
+                <text class="detail-label">☀️ 天气:</text>
+                <text class="detail-value">{{item.weather}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.pestControl}}">
+                <text class="detail-label">🐛 病虫害防治:</text>
+                <text class="detail-value">{{item.pestControl}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.fertilization}}">
+                <text class="detail-label">🌱 施肥:</text>
+                <text class="detail-value">{{item.fertilization}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.irrigation}}">
+                <text class="detail-label">💦 灌溉:</text>
+                <text class="detail-value">{{item.irrigation}}</text>
+              </view>
+            </view>
+
+            <view class="record-description" wx:if="{{item.description}}">
+              <text>{{item.description}}</text>
+            </view>
+
+            <view class="record-images" wx:if="{{item.images}}">
+              <image 
+                wx:for="{{item.images.split(',')}}" 
+                wx:key="index"
+                wx:for-item="imgUrl"
+                class="record-image" 
+                src="{{imgUrl}}" 
+                mode="aspectFill"
+                data-url="{{item.images}}"
+                bindtap="previewImage"
+              ></image>
+            </view>
+
+            <view class="record-footer">
+              <text class="record-by">记录人: {{item.recordBy}}</text>
+              <text class="chain-status {{item.chainStatus === 1 ? 'on-chain' : ''}}">
+                {{item.chainStatus === 1 ? '✓ 已上链' : '未上链'}}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="empty-tip" wx:if="{{traceInfo.growthRecords.length === 0}}">
+        <text>暂无生长记录</text>
+      </view>
+    </view>
+
+    <!-- 区块链验证 -->
+    <view class="tab-content" wx:if="{{activeTab === 'blockchain'}}">
+      <view class="blockchain-card">
+        <view class="blockchain-status {{traceInfo.verification.isVerified ? 'verified' : 'unverified'}}">
+          <text class="status-icon">{{traceInfo.verification.isVerified ? '✓' : '⚠'}}</text>
+          <text class="status-text">{{traceInfo.verification.message}}</text>
+        </view>
+
+        <view class="blockchain-info" wx:if="{{traceInfo.verification.isVerified}}">
+          <view class="blockchain-item">
+            <text class="blockchain-label">交易哈希</text>
+            <view class="hash-container">
+              <text class="blockchain-value hash">{{traceInfo.verification.txHash}}</text>
+              <text 
+                class="copy-button" 
+                data-hash="{{traceInfo.verification.txHash}}"
+                bindtap="copyTxHash"
+              >
+                复制
+              </text>
+            </view>
+          </view>
+          <view class="blockchain-item">
+            <text class="blockchain-label">上链时间</text>
+            <text class="blockchain-value">{{traceInfo.verification.chainTime}}</text>
+          </view>
+        </view>
+
+        <view class="blockchain-tip">
+          <text class="tip-icon">ℹ️</text>
+          <text class="tip-text">
+            {{traceInfo.verification.isVerified ? 
+              '该批次数据已通过区块链技术加密存储，确保数据真实可信，不可篡改。' : 
+              '该批次数据尚未上链，请联系农户或管理员进行上链操作。'
+            }}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
 </view>

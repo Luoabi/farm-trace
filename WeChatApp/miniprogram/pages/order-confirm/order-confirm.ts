@@ -1,4 +1,4 @@
-import { createOrder } from '../../api/order';
+import { createOrder, payOrder } from '../../api/order';
 import { getDefaultAddress, getAddressList } from '../../api/address';
 import { getUserInfo } from '../../utils/auth';
 import { Address } from '../../types/address';
@@ -108,27 +108,43 @@ Page({
     this.setData({ submitting: true });
     
     try {
-      wx.showLoading({ title: '提交中...', mask: true });
+      wx.showLoading({ title: `提交中(0/${items.length})...`, mask: true });
       
-      // 构建订单数据
-      const orderData = {
-        customerId: userInfo.id,
-        customerName: userInfo.realName,
-        customerPhone: userInfo.phone,
-        items: items.map(item => ({
+      // 构建收货地址
+      const shippingAddress = `${address.province}${address.city}${address.district}${address.detailAddress}`;
+      
+      // 按顺序为每个商品创建订单（避免并发导致ID冲突）
+      const orders = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        wx.showLoading({ 
+          title: `提交中(${i + 1}/${items.length})...`, 
+          mask: true 
+        });
+        
+        const orderData = {
+          customerId: userInfo.id,
+          customerName: userInfo.realName,
           productId: item.productId,
-          productName: item.productName,
-          price: item.price,
+          batchId: '',  // 空字符串，后端会从商品信息中获取农户ID
           quantity: item.quantity,
-          unit: item.unit
-        })),
-        totalAmount,
-        shippingAddress: `${address.province}${address.city}${address.district}${address.detailAddress}`,
-        shippingMethod: '快递配送',
-        remark: remark || undefined
-      };
-      
-      const order = await createOrder(orderData);
+          deliveryAddress: shippingAddress,
+          deliveryType: '快递配送',
+          remark: remark || undefined
+        };
+        
+        console.log(`创建第${i + 1}个订单:`, orderData);
+        
+        try {
+          const order = await createOrder(orderData);
+          orders.push(order);
+          console.log(`第${i + 1}个订单创建成功:`, order.orderNumber);
+        } catch (error: any) {
+          console.error(`第${i + 1}个订单创建失败:`, error);
+          throw new Error(`商品"${item.productName}"下单失败: ${error.message}`);
+        }
+      }
       
       wx.hideLoading();
       
@@ -139,22 +155,80 @@ Page({
       wx.setStorageSync('cart', cart);
       
       wx.showToast({
-        title: '下单成功',
-        icon: 'success'
+        title: `成功创建${orders.length}个订单`,
+        icon: 'success',
+        duration: 1500
       });
       
-      setTimeout(() => {
-        wx.redirectTo({
-          url: `/pages/order-detail/order-detail?id=${order.id}`
-        });
-      }, 1500);
+      // 如果只有一个订单，直接发起支付
+      if (orders.length === 1) {
+        setTimeout(() => {
+          this.handlePayment(orders[0].id);
+        }, 1500);
+      } else {
+        // 多个订单，跳转到订单列表
+        setTimeout(() => {
+          wx.switchTab({
+            url: '/pages/order-list/order-list'
+          });
+        }, 1500);
+      }
     } catch (error: any) {
       wx.hideLoading();
       this.setData({ submitting: false });
       
+      console.error('下单失败:', error);
       wx.showToast({
         title: error.message || '下单失败',
-        icon: 'none'
+        icon: 'none',
+        duration: 3000
+      });
+    }
+  },
+
+  // 发起支付
+  async handlePayment(orderId: string) {
+    try {
+      wx.showLoading({ title: '发起支付...', mask: true });
+      
+      // 调用支付接口（模拟支付）
+      await payOrder(orderId);
+      
+      wx.hideLoading();
+      
+      // 模拟微信支付
+      // 在实际生产环境中，这里应该调用 wx.requestPayment()
+      wx.showModal({
+        title: '支付成功',
+        content: '订单支付成功，农户将尽快为您发货',
+        showCancel: false,
+        success: () => {
+          // 跳转到订单详情页
+          wx.redirectTo({
+            url: `/pages/order-detail/order-detail?id=${orderId}`
+          });
+        }
+      });
+    } catch (error: any) {
+      wx.hideLoading();
+      console.error('支付失败:', error);
+      
+      wx.showModal({
+        title: '支付失败',
+        content: error.message || '支付失败，请稍后重试',
+        confirmText: '重试',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            // 重试支付
+            this.handlePayment(orderId);
+          } else {
+            // 跳转到订单列表
+            wx.switchTab({
+              url: '/pages/order-list/order-list'
+            });
+          }
+        }
       });
     }
   }

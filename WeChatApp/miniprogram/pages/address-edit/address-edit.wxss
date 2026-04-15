@@ -54,12 +54,62 @@
   border-radius: 12rpx;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2rpx solid #e0e0e0;
+  transition: all 0.3s;
+}
+
+.region-box:active {
+  background: #eef1f6;
+  border-color: #667eea;
 }
 
 .region-text {
   font-size: 28rpx;
   color: #333;
   line-height: 1.5;
+  flex: 1;
+}
+
+.icon {
+  font-size: 40rpx;
+  color: #999;
+  margin-left: 10rpx;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 12rpx;
+  line-height: 1.5;
+}
+
+.address-input-box {
+  position: relative;
+}
+
+.map-btn {
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  padding: 10rpx 20rpx;
+  background: #667eea;
+  color: white;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+.map-icon {
+  margin-right: 8rpx;
+  font-size: 28rpx;
+}
+
+.map-text {
+  font-size: 24rpx;
 }
 
 .switch-item {

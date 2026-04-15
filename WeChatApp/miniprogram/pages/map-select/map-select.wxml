@@ -1,0 +1,56 @@
+<view class="container">
+  <!-- 地图 -->
+  <map
+    id="map"
+    class="map"
+    latitude="{{latitude}}"
+    longitude="{{longitude}}"
+    markers="{{markers}}"
+    show-location
+    bindtap="onMapTap"
+    bindregionchange="onRegionChange"
+  >
+    <!-- 中心标记点 -->
+    <cover-view class="center-marker">
+      <cover-view class="marker-pin">📍</cover-view>
+    </cover-view>
+    
+    <!-- 重新定位按钮 -->
+    <cover-view class="relocate-btn" bindtap="relocate">
+      <cover-view class="relocate-icon">🎯</cover-view>
+    </cover-view>
+  </map>
+
+  <!-- 地址信息卡片 -->
+  <view class="address-card">
+    <view class="card-header">
+      <text class="icon">📍</text>
+      <text class="title">选择的位置</text>
+    </view>
+    
+    <view class="address-info" wx:if="{{address}}">
+      <text class="name">{{name || '未命名位置'}}</text>
+      <text class="address">{{address}}</text>
+    </view>
+    
+    <view class="address-info" wx:else>
+      <text class="placeholder">请在地图上点击或拖动选择位置</text>
+    </view>
+
+    <!-- 使用微信位置选择器 -->
+    <view class="wx-choose-btn" bindtap="useWxChooseLocation">
+      <text class="btn-icon">🔍</text>
+      <text class="btn-text">搜索位置</text>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="footer">
+    <view class="btn-cancel" bindtap="navigateBack">
+      <text>取消</text>
+    </view>
+    <view class="btn-confirm" bindtap="confirmLocation">
+      <text>确认选择</text>
+    </view>
+  </view>
+</view>

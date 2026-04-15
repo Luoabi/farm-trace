@@ -1,14 +1,18 @@
 <view class="container" wx:if="{{order}}">
   <!-- 订单状态 -->
-  <view class="status-section">
+  <view class="status-section status-{{order.orderStatus}}">
     <view class="status-icon">
-      <text wx:if="{{order.status === 'WAITING_PAYMENT'}}">💰</text>
-      <text wx:elif="{{order.status === 'PAID'}}">📦</text>
-      <text wx:elif="{{order.status === 'SHIPPED'}}">🚚</text>
-      <text wx:elif="{{order.status === 'DELIVERED'}}">✅</text>
+      <text wx:if="{{order.orderStatus === '0'}}">💰</text>
+      <text wx:elif="{{order.orderStatus === '1'}}">📦</text>
+      <text wx:elif="{{order.orderStatus === '2'}}">🚚</text>
+      <text wx:elif="{{order.orderStatus === '3'}}">✅</text>
       <text wx:else>❌</text>
     </view>
-    <view class="status-text">{{statusMap[order.status]}}</view>
+    <view class="status-text">{{statusMap[order.orderStatus]}}</view>
+    <view class="status-desc" wx:if="{{order.orderStatus === '0'}}">请尽快完成支付</view>
+    <view class="status-desc" wx:elif="{{order.orderStatus === '1'}}">农户正在准备发货</view>
+    <view class="status-desc" wx:elif="{{order.orderStatus === '2'}}">商品正在配送中</view>
+    <view class="status-desc" wx:elif="{{order.orderStatus === '3'}}">感谢您的购买</view>
   </view>
 
   <!-- 收货地址 -->
@@ -22,25 +26,51 @@
         <text class="receiver">{{order.customerName}}</text>
         <text class="phone">{{order.customerPhone}}</text>
       </view>
-      <view class="address-detail">{{order.shippingAddress}}</view>
+      <view class="address-detail">{{order.deliveryAddress}}</view>
     </view>
   </view>
 
-  <!-- 商品列表 -->
+  <!-- 商品信息 -->
   <view class="goods-section">
     <view class="section-title">
       <text class="icon">📦</text>
-      <text>商品清单</text>
+      <text>商品信息</text>
     </view>
-    <view class="goods-list">
-      <view class="goods-item" wx:for="{{order.items}}" wx:key="productId">
-        <view class="goods-info">
-          <text class="goods-name">{{item.productName}}</text>
-          <view class="goods-footer">
-            <text class="goods-price">¥{{item.price}}/{{item.unit}}</text>
-            <text class="goods-quantity">x{{item.quantity}}</text>
-          </view>
+    <view class="goods-item">
+      <view class="goods-info">
+        <text class="goods-name">{{order.productName}}</text>
+        <view class="goods-detail">
+          <text class="goods-spec">{{order.quantity}} {{order.productPrice}}/单位</text>
         </view>
+        <view class="goods-footer">
+          <text class="goods-price">¥{{order.productPrice}}</text>
+          <text class="goods-quantity">x{{order.quantity}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 农户信息 -->
+  <view class="farmer-section">
+    <view class="section-title">
+      <text class="icon">👨‍🌾</text>
+      <text>农户信息</text>
+    </view>
+    <view class="farmer-info">
+      <view class="info-row">
+        <text class="label">农户姓名</text>
+        <text class="value">{{order.farmerName}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">联系电话</text>
+        <view class="value-box">
+          <text class="value">{{order.farmerPhone}}</text>
+          <text class="call-btn" bindtap="callFarmer">拨打</text>
+        </view>
+      </view>
+      <view class="info-row">
+        <text class="label">批次编号</text>
+        <text class="value">{{order.batchNumber}}</text>
       </view>
     </view>
   </view>
@@ -61,11 +91,11 @@
       </view>
       <view class="info-item">
         <text class="label">下单时间</text>
-        <text class="value">{{order.createdAt}}</text>
+        <text class="value">{{order.createTime}}</text>
       </view>
       <view class="info-item">
         <text class="label">配送方式</text>
-        <text class="value">{{order.shippingMethod}}</text>
+        <text class="value">{{order.deliveryType || '快递配送'}}</text>
       </view>
       <view class="info-item" wx:if="{{order.remark}}">
         <text class="label">订单备注</text>
@@ -78,7 +108,7 @@
   <view class="price-section">
     <view class="price-item">
       <text class="label">商品总价</text>
-      <text class="value">¥{{order.totalAmount.toFixed(2)}}</text>
+      <text class="value">¥{{order.totalPrice}}</text>
     </view>
     <view class="price-item">
       <text class="label">配送费</text>
@@ -86,17 +116,54 @@
     </view>
     <view class="price-item total">
       <text class="label">实付款</text>
-      <text class="amount">¥{{order.totalAmount.toFixed(2)}}</text>
+      <text class="amount">¥{{order.totalPrice}}</text>
     </view>
   </view>
 
   <!-- 底部操作栏 -->
-  <view class="footer" wx:if="{{order.status !== 'CANCELLED' && order.status !== 'DELIVERED'}}">
-    <view class="btn-cancel" wx:if="{{order.status === 'WAITING_PAYMENT' || order.status === 'PAID'}}" bindtap="handleCancelOrder">
+  <view class="footer" wx:if="{{order.orderStatus !== '4' && order.orderStatus !== '3'}}">
+    <!-- 待支付状态：显示取消订单和立即支付按钮 -->
+    <view 
+      class="btn btn-cancel" 
+      wx:if="{{order.orderStatus === '0'}}" 
+      bindtap="handleCancelOrder"
+    >
       <text>取消订单</text>
     </view>
-    <view class="btn-confirm" wx:if="{{order.status === 'SHIPPED'}}" bindtap="handleConfirmReceipt">
+    <view 
+      class="btn btn-primary" 
+      wx:if="{{order.orderStatus === '0'}}" 
+      bindtap="handlePayOrder"
+    >
+      <text>立即支付</text>
+    </view>
+    
+    <!-- 待发货状态：显示取消订单按钮 -->
+    <view 
+      class="btn btn-cancel" 
+      wx:if="{{order.orderStatus === '1'}}" 
+      bindtap="handleCancelOrder"
+    >
+      <text>取消订单</text>
+    </view>
+    
+    <!-- 待收货状态：显示确认收货按钮 -->
+    <view 
+      class="btn btn-primary" 
+      wx:if="{{order.orderStatus === '2'}}" 
+      bindtap="handleConfirmReceipt"
+    >
       <text>确认收货</text>
+    </view>
+  </view>
+  
+  <!-- 已完成或已取消状态：显示删除订单按钮 -->
+  <view class="footer" wx:if="{{order.orderStatus === '3' || order.orderStatus === '4'}}">
+    <view 
+      class="btn btn-delete" 
+      bindtap="handleDeleteOrder"
+    >
+      <text>删除订单</text>
     </view>
   </view>
 </view>

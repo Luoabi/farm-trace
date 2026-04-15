@@ -7,9 +7,9 @@ Page({
     addressId: '', // 用于导航栏标题判断
     receiverName: '',
     receiverPhone: '',
-    province: '四川省',
-    city: '凉山彝族自治州',
-    district: '西昌市',
+    province: '',
+    city: '',
+    district: '',
     detailAddress: '',
     isDefault: false,
     isEdit: false,
@@ -36,7 +36,7 @@ Page({
         city: address.city,
         district: address.district,
         detailAddress: address.detailAddress,
-        isDefault: address.isDefault
+        isDefault: address.isDefault === 1  // 转换为 boolean 类型
       });
       
       wx.hideLoading();
@@ -63,6 +63,107 @@ Page({
 
   handleDefaultChange(e: any) {
     this.setData({ isDefault: e.detail.value });
+  },
+
+  // 选择地区
+  handleRegionPicker() {
+    // 跳转到地区选择页面
+    wx.navigateTo({
+      url: `/pages/region-picker/region-picker?province=${this.data.province}&city=${this.data.city}&district=${this.data.district}`
+    });
+  },
+
+  // 处理地区选择返回的数据
+  handleRegionSelected(region: any) {
+    console.log('收到选择的地区:', region);
+    
+    this.setData({
+      province: region.province,
+      city: region.city,
+      district: region.district
+    });
+    
+    wx.showToast({
+      title: '地区选择成功',
+      icon: 'success',
+      duration: 1500
+    });
+  },
+
+  // 选择地图位置
+  handleChooseLocation() {
+    // 跳转到地图选点页面
+    wx.navigateTo({
+      url: '/pages/map-select/map-select'
+    });
+  },
+
+  // 处理地图选点返回的数据
+  handleLocationSelected(location: any) {
+    console.log('收到选择的位置:', location);
+    
+    // 解析地址信息
+    const address = location.address || '';
+    const name = location.name || '';
+    
+    // 更新省市区（从 address 中提取）
+    this.parseAddress(address);
+    
+    // 更新详细地址 - 优先使用 name，如果没有则使用完整地址
+    let detailAddress = '';
+    if (name) {
+      // 如果有地点名称，组合名称和地址
+      detailAddress = address ? `${name}（${address}）` : name;
+    } else {
+      detailAddress = address;
+    }
+    
+    this.setData({
+      detailAddress: detailAddress
+    });
+    
+    wx.showToast({
+      title: '位置选择成功',
+      icon: 'success',
+      duration: 1500
+    });
+  },
+
+  // 解析地址字符串，提取省市区
+  parseAddress(address: string) {
+    // 更智能的地址解析逻辑
+    let province = this.data.province;
+    let city = this.data.city;
+    let district = this.data.district;
+    
+    // 匹配省份
+    const provinceMatch = address.match(/([\u4e00-\u9fa5]{2,}省)/);
+    if (provinceMatch) {
+      province = provinceMatch[1];
+    }
+    
+    // 匹配市/自治州
+    const cityMatch = address.match(/([\u4e00-\u9fa5]{2,}(市|自治州|地区|盟))/);
+    if (cityMatch) {
+      city = cityMatch[1];
+    }
+    
+    // 匹配区/县
+    const districtMatch = address.match(/([\u4e00-\u9fa5]{2,}(区|县|市))/);
+    if (districtMatch) {
+      district = districtMatch[1];
+    }
+    
+    // 特殊处理凉山州
+    if (address.includes('凉山') && !city.includes('凉山')) {
+      city = '凉山彝族自治州';
+    }
+    
+    this.setData({
+      province: province,
+      city: city,
+      district: district
+    });
   },
 
   validateForm() {
@@ -114,7 +215,7 @@ Page({
       city: this.data.city,
       district: this.data.district,
       detailAddress: this.data.detailAddress,
-      isDefault: this.data.isDefault
+      isDefault: this.data.isDefault ? 1 : 0  // 转换为 Integer 类型
     };
 
     try {

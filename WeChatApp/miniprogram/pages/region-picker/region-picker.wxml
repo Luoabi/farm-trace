@@ -1,0 +1,97 @@
+<view class="container">
+  <!-- 顶部选中显示 -->
+  <view class="selected-bar">
+    <view class="selected-item">
+      <text class="label">已选：</text>
+      <text class="value">
+        {{selectedProvince ? selectedProvince.name : '请选择'}}
+        {{selectedCity ? ' / ' + selectedCity.name : ''}}
+        {{selectedDistrict ? ' / ' + selectedDistrict.name : ''}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 标签页切换 -->
+  <view class="tabs">
+    <view 
+      class="tab-item {{currentTab === 0 ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="0"
+    >
+      <text class="tab-text">{{selectedProvince ? selectedProvince.name : '请选择'}}</text>
+      <view class="tab-line" wx:if="{{currentTab === 0}}"></view>
+    </view>
+    <view 
+      class="tab-item {{currentTab === 1 ? 'active' : ''}} {{!selectedProvince ? 'disabled' : ''}}"
+      bindtap="switchTab"
+      data-tab="1"
+    >
+      <text class="tab-text">{{selectedCity ? selectedCity.name : '请选择'}}</text>
+      <view class="tab-line" wx:if="{{currentTab === 1}}"></view>
+    </view>
+    <view 
+      class="tab-item {{currentTab === 2 ? 'active' : ''}} {{!selectedCity || districts.length === 0 ? 'disabled' : ''}}"
+      bindtap="switchTab"
+      data-tab="2"
+      wx:if="{{districts.length > 0 || selectedDistrict}}"
+    >
+      <text class="tab-text">{{selectedDistrict ? selectedDistrict.name : '请选择'}}</text>
+      <view class="tab-line" wx:if="{{currentTab === 2}}"></view>
+    </view>
+  </view>
+
+  <!-- 列表内容 -->
+  <scroll-view class="list-container" scroll-y>
+    <!-- 省份列表 -->
+    <view class="list" wx:if="{{currentTab === 0}}">
+      <view 
+        class="list-item {{provinceIndex === index ? 'selected' : ''}}"
+        wx:for="{{provinces}}"
+        wx:key="code"
+        bindtap="handleProvinceSelect"
+        data-index="{{index}}"
+      >
+        <text class="item-text">{{item.name}}</text>
+        <text class="check-icon" wx:if="{{provinceIndex === index}}">✓</text>
+      </view>
+    </view>
+
+    <!-- 城市列表 -->
+    <view class="list" wx:if="{{currentTab === 1}}">
+      <view 
+        class="list-item {{cityIndex === index ? 'selected' : ''}}"
+        wx:for="{{cities}}"
+        wx:key="code"
+        bindtap="handleCitySelect"
+        data-index="{{index}}"
+      >
+        <text class="item-text">{{item.name}}</text>
+        <text class="check-icon" wx:if="{{cityIndex === index}}">✓</text>
+      </view>
+    </view>
+
+    <!-- 区县列表 -->
+    <view class="list" wx:if="{{currentTab === 2}}">
+      <view 
+        class="list-item {{districtIndex === index ? 'selected' : ''}}"
+        wx:for="{{districts}}"
+        wx:key="code"
+        bindtap="handleDistrictSelect"
+        data-index="{{index}}"
+      >
+        <text class="item-text">{{item.name}}</text>
+        <text class="check-icon" wx:if="{{districtIndex === index}}">✓</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部按钮 -->
+  <view class="footer">
+    <view class="btn-cancel" bindtap="handleCancel">
+      <text>取消</text>
+    </view>
+    <view class="btn-confirm" bindtap="confirmSelection">
+      <text>确定</text>
+    </view>
+  </view>
+</view>

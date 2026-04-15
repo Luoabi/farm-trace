@@ -82,6 +82,8 @@ Page({
         unit: product.unit,
         imageUrl: product.imageUrl,
         stock: product.stock,
+        farmerId: product.farmerId,  // 添加农户ID
+        farmerName: product.farmerName,  // 添加农户名称
         selected: true
       });
     }
@@ -107,6 +109,8 @@ Page({
       unit: product.unit,
       imageUrl: product.imageUrl,
       stock: product.stock,
+      farmerId: product.farmerId,  // 添加农户ID
+      farmerName: product.farmerName,  // 添加农户名称
       selected: true
     }];
     

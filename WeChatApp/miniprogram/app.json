@@ -10,6 +10,8 @@
     "pages/order-detail/order-detail",
     "pages/address-list/address-list",
     "pages/address-edit/address-edit",
+    "pages/region-picker/region-picker",
+    "pages/map-select/map-select",
     "pages/trace/trace",
     "pages/user/user",
     "pages/logs/logs"
@@ -19,6 +21,11 @@
     "navigationBarTitleText": "西昌农产品溯源",
     "navigationBarBackgroundColor": "#667eea",
     "backgroundColor": "#f5f5f5"
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于小程序位置接口的效果展示"  
+    }
   },
   "tabBar": {
     "color": "#999999",

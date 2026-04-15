@@ -25,20 +25,29 @@
 
     <view class="form-item">
       <view class="label">所在地区</view>
-      <view class="region-box">
+      <view class="region-box" bindtap="handleRegionPicker">
         <text class="region-text">{{province}} {{city}} {{district}}</text>
+        <text class="icon">›</text>
       </view>
+      <view class="hint-text">点击选择省市区</view>
     </view>
 
     <view class="form-item">
       <view class="label">详细地址</view>
-      <textarea 
-        class="textarea"
-        placeholder="请输入详细地址（街道、门牌号等）" 
-        value="{{detailAddress}}"
-        bindinput="onDetailAddressInput"
-        maxlength="200"
-      ></textarea>
+      <view class="address-input-box">
+        <textarea 
+          class="textarea"
+          placeholder="请输入详细地址（街道、门牌号等）" 
+          value="{{detailAddress}}"
+          bindinput="onDetailAddressInput"
+          maxlength="200"
+        ></textarea>
+        <view class="map-btn" bindtap="handleChooseLocation">
+          <text class="map-icon">📍</text>
+          <text class="map-text">地图选点</text>
+        </view>
+      </view>
+      <view class="hint-text">可通过地图选点自动填充地址</view>
     </view>
 
     <view class="form-item switch-item">

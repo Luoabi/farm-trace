@@ -25,8 +25,37 @@
   line-height: 1.4;
 }
 
+.status-desc {
+  font-size: 26rpx;
+  margin-top: 12rpx;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* 不同状态的背景色 */
+.status-0 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.status-1 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.status-2 {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.status-3 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.status-4 {
+  background: linear-gradient(135deg, #868f96 0%, #596164 100%);
+}
+
 .address-section,
 .goods-section,
+.farmer-section,
 .info-section,
 .price-section {
   background: white;
@@ -138,6 +167,58 @@
   line-height: 1.5;
 }
 
+.goods-detail {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+.goods-spec {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.5;
+}
+
+/* 农户信息样式 */
+.farmer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  width: 100%;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 28rpx;
+  width: 100%;
+  line-height: 1.5;
+}
+
+.info-row .label {
+  color: #999;
+  width: 150rpx;
+  flex-shrink: 0;
+}
+
+.info-row .value {
+  color: #333;
+  flex: 1;
+  text-align: right;
+}
+
+.call-btn {
+  padding: 8rpx 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 24rpx;
+  border-radius: 8rpx;
+  line-height: 1.5;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+
 .info-list {
   display: flex;
   flex-direction: column;
@@ -237,8 +318,8 @@
   box-sizing: border-box;
 }
 
-.btn-cancel,
-.btn-confirm {
+/* 统一按钮样式 */
+.btn {
   padding: 0 40rpx;
   height: 70rpx;
   border-radius: 35rpx;
@@ -254,6 +335,18 @@
   background: white;
   border: 2rpx solid #999;
   color: #999;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+}
+
+.btn-delete {
+  background: white;
+  border: 2rpx solid #f56c6c;
+  color: #f56c6c;
 }
 
 .btn-confirm {

@@ -88,11 +88,6 @@
         <el-table-column prop="name" label="商品名称" min-width="180">
           <template #default="scope">
             <div class="product-name">
-              <!-- <el-image
-                :src="scope.row.image"
-                style="width: 40px; height: 40px; margin-right: 10px;"
-                fit="cover"
-              /> -->
               <span>{{ scope.row.productName }}</span>
             </div>
           </template>
@@ -222,16 +217,22 @@
             action="#" 
             :auto-upload="false"
             :limit="1" 
-            :on-change="handleMainImageChange" 
+            :on-change="handleMainImageChange"
+            :on-remove="handleRemoveImage"
             list-type="picture-card"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
           >
-            <el-icon><Upload /></el-icon>
+            <el-icon v-if="!uploadingImage"><Plus /></el-icon>
+            <el-icon v-else class="is-loading"><Loading /></el-icon>
             <template #tip>
               <div class="el-upload__tip">
-                支持 jpg/png 格式，建议尺寸 800x800
+                支持 JPG/PNG/GIF/WEBP 格式，建议尺寸 800x800，最大 10MB
               </div>
             </template>
           </el-upload>
+          <div v-if="productForm.imageUrl" class="image-preview-info">
+            <el-text type="success">✓ 图片已上传</el-text>
+          </div>
         </el-form-item>
         <el-form-item prop="description" label="商品描述">
           <el-input 
@@ -253,9 +254,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Download, Search, RefreshLeft, Check, Close, Delete, View, Edit, Upload } from '@element-plus/icons-vue';
+import { Plus, Download, Search, RefreshLeft, Check, Close, Delete, View, Edit, Upload, Loading } from '@element-plus/icons-vue';
 import { productAPI } from '../api/modules/product';
 import { batchAPI } from '../api/modules/batch';
+import { uploadAPI } from '../api/modules/upload';
 
 // 当前用户信息
 const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
@@ -273,6 +275,7 @@ const productDetailVisible = ref(false);
 const productFormVisible = ref(false);
 const isEdit = ref(false);
 const mainImageList = ref([]);
+const uploadingImage = ref(false);
 
 // 批次选项
 const batchOptions = ref([]);
@@ -429,11 +432,43 @@ const handleBatchSelect = (batch) => {
 };
 
 // 主图变化处理
-const handleMainImageChange = (uploadFile, uploadFiles) => {
-  mainImageList.value = uploadFiles.slice(0, 1);
-  if (uploadFiles[0]) {
-    productForm.image = `https://via.placeholder.com/300x300?text=${productForm.name || 'Product'}`;
+const handleMainImageChange = async (uploadFile, uploadFiles) => {
+  // 只保留最新的一个文件
+  mainImageList.value = uploadFiles.slice(-1);
+  
+  if (uploadFile.raw) {
+    try {
+      uploadingImage.value = true;
+      
+      // 调用上传 API
+      const response = await uploadAPI.uploadImage(uploadFile.raw);
+      
+      if (response.success) {
+        // 上传成功，保存图片URL
+        productForm.imageUrl = response.url;
+        ElMessage.success('图片上传成功');
+        console.log('图片上传成功:', response.url);
+      } else {
+        ElMessage.error(response.message || '图片上传失败');
+        // 移除失败的文件
+        mainImageList.value = [];
+      }
+    } catch (error) {
+      console.error('图片上传失败:', error);
+      ElMessage.error('图片上传失败: ' + (error.message || '未知错误'));
+      // 移除失败的文件
+      mainImageList.value = [];
+    } finally {
+      uploadingImage.value = false;
+    }
   }
+};
+
+// 移除图片
+const handleRemoveImage = () => {
+  mainImageList.value = [];
+  productForm.imageUrl = '';
+  ElMessage.success('图片已移除');
 };
 
 // 查看商品详情
@@ -491,12 +526,15 @@ const handleEditProduct = (row) => {
     imageUrl: row.imageUrl,
     status: row.status
   });
-  // 模拟主图
+  // 如果有图片，显示在上传组件中
   if (row.imageUrl) {
     mainImageList.value = [{
-      name: 'main-image.jpg',
-      url: row.imageUrl
+      name: 'product-image.jpg',
+      url: row.imageUrl,
+      uid: Date.now()
     }];
+  } else {
+    mainImageList.value = [];
   }
   productFormVisible.value = true;
 };
@@ -769,6 +807,30 @@ onMounted(async () => {
 .product-form {
   max-height: 60vh;
   overflow-y: auto;
+}
+
+/* 图片上传样式 */
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: var(--el-color-primary);
+}
+
+.avatar-uploader .el-icon.is-loading {
+  font-size: 28px;
+  color: var(--el-color-primary);
+}
+
+.image-preview-info {
+  margin-top: 8px;
+  font-size: 14px;
 }
 
 /* 响应式设计 */
