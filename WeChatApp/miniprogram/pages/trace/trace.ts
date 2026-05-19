@@ -6,7 +6,17 @@ Page({
     traceInfo: null as TraceInfo | null,
     loading: false,
     showResult: false,
-    activeTab: 'batch' as 'batch' | 'growth' | 'blockchain'
+    activeTab: 'batch' as 'batch' | 'growth' | 'blockchain',
+    // 加载状态
+    verifying: false,
+    verifyStep: 0,
+    verifySteps: [
+      { text: '正在查询批次信息...', icon: '📦' },
+      { text: '正在获取生长记录...', icon: '🌱' },
+      { text: '正在验证区块链数据...', icon: '🔗' },
+      { text: '正在对比数据完整性...', icon: '🔍' },
+      { text: '验证完成！', icon: '✅' }
+    ]
   },
 
   onLoad(options: any) {
@@ -79,23 +89,42 @@ Page({
       return;
     }
 
-    this.setData({ loading: true });
+    // 开始验证流程
+    this.setData({ 
+      loading: true,
+      verifying: true,
+      verifyStep: 0
+    });
 
     try {
+      // 模拟验证步骤动画
+      await this.simulateVerificationSteps();
+      
+      // 实际查询数据
       const traceInfo = await getTraceInfo(batchNumber.trim());
       
       console.log('溯源信息:', traceInfo);
+      
+      // 显示最后一步
+      this.setData({ verifyStep: 4 });
+      
+      // 等待一下再显示结果
+      await this.sleep(800);
       
       this.setData({
         traceInfo,
         showResult: true,
         loading: false,
+        verifying: false,
         activeTab: 'batch'
       });
     } catch (error: any) {
       console.error('查询失败:', error);
       
-      this.setData({ loading: false });
+      this.setData({ 
+        loading: false,
+        verifying: false
+      });
       
       wx.showModal({
         title: '查询失败',
@@ -103,6 +132,30 @@ Page({
         showCancel: false
       });
     }
+  },
+
+  // 模拟验证步骤
+  async simulateVerificationSteps() {
+    // 步骤1: 查询批次信息
+    this.setData({ verifyStep: 0 });
+    await this.sleep(600);
+    
+    // 步骤2: 获取生长记录
+    this.setData({ verifyStep: 1 });
+    await this.sleep(600);
+    
+    // 步骤3: 验证区块链数据
+    this.setData({ verifyStep: 2 });
+    await this.sleep(800);
+    
+    // 步骤4: 对比数据完整性
+    this.setData({ verifyStep: 3 });
+    await this.sleep(700);
+  },
+
+  // 延迟函数
+  sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   },
 
   // 切换标签页

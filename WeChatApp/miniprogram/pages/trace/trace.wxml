@@ -1,4 +1,30 @@
 <view class="trace-container">
+  <!-- 验证加载遮罩 -->
+  <view class="verify-overlay" wx:if="{{verifying}}">
+    <view class="verify-modal">
+      <view class="verify-animation">
+        <view class="spinner"></view>
+        <view class="pulse-ring"></view>
+      </view>
+      
+      <view class="verify-steps">
+        <view 
+          class="verify-step {{index <= verifyStep ? 'active' : ''}}"
+          wx:for="{{verifySteps}}"
+          wx:key="index"
+        >
+          <view class="step-icon">{{item.icon}}</view>
+          <text class="step-text">{{item.text}}</text>
+          <view class="step-check" wx:if="{{index < verifyStep}}">✓</view>
+        </view>
+      </view>
+      
+      <view class="verify-tip">
+        <text>正在通过区块链技术验证数据真实性...</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 查询区域 -->
   <view class="query-section" wx:if="{{!showResult}}">
     <view class="query-header">

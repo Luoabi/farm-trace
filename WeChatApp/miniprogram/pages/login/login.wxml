@@ -1,5 +1,7 @@
 <view class="container">
-  <view class="logo-section">
+ 
+  <view class="logo-section" >
+  
     <view class="logo">
       <text class="logo-icon">🌾</text>
     </view>
@@ -31,6 +33,7 @@
           placeholder="请输入密码" 
           value="{{password}}"
           bindinput="onPasswordInput"
+          password="true"
         />
       </view>
     </view>

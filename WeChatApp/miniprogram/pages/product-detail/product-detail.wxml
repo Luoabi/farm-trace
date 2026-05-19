@@ -35,7 +35,7 @@
       </view>
       <view class="detail-item">
         <text class="detail-label">状态：</text>
-        <text class="detail-value">{{product.status === 'ON_SALE' ? '在售' : '已下架'}}</text>
+        <text class="detail-value">{{product.status === '上架' ? '在售' : '已下架'}}</text>
       </view>
       <view class="detail-item" wx:if="{{product.farmerName}}">
         <text class="detail-label">供应商：</text>

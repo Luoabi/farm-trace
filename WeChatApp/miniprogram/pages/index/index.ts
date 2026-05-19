@@ -200,10 +200,35 @@ Page({
   handleScan() {
     wx.scanCode({
       success: (res) => {
-        // 扫码成功，跳转到溯源页面
-        wx.navigateTo({
-          url: `/pages/trace/trace?code=${res.result}`
-        });
+        console.log('扫码结果:', res.result);
+        
+        // 解析扫码结果
+        // 格式可能是: pages/trace/trace?batchNumber=xxx
+        // 或者直接是批次号
+        let batchNumber = '';
+        
+        if (res.result.includes('batchNumber=')) {
+          // 从URL中提取批次号
+          const match = res.result.match(/batchNumber=([^&]+)/);
+          if (match) {
+            batchNumber = match[1];
+          }
+        } else {
+          // 直接使用扫码结果作为批次号
+          batchNumber = res.result;
+        }
+        
+        if (batchNumber) {
+          // 直接跳转到溯源页面
+          wx.navigateTo({
+            url: `/pages/trace/trace?batchNumber=${batchNumber}`
+          });
+        } else {
+          wx.showToast({
+            title: '无效的二维码',
+            icon: 'none'
+          });
+        }
       },
       fail: () => {
         wx.showToast({

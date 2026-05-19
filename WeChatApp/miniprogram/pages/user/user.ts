@@ -38,17 +38,83 @@ Page({
   },
 
   handleScan() {
+    // 显示选择对话框：扫码或手动输入
+    wx.showActionSheet({
+      itemList: ['扫码查询', '输入批次号查询'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          // 扫码查询
+          this.scanQRCode();
+        } else if (res.tapIndex === 1) {
+          // 手动输入批次号
+          this.inputBatchNumber();
+        }
+      }
+    });
+  },
+
+  // 扫码查询
+  scanQRCode() {
     wx.scanCode({
       success: (res) => {
-        wx.navigateTo({
-          url: `/pages/trace/trace?code=${res.result}`
-        });
+        console.log('扫码结果:', res.result);
+        
+        // 解析扫码结果
+        // 格式可能是: pages/trace/trace?batchNumber=xxx
+        // 或者直接是批次号
+        let batchNumber = '';
+        
+        if (res.result.includes('batchNumber=')) {
+          // 从URL中提取批次号
+          const match = res.result.match(/batchNumber=([^&]+)/);
+          if (match) {
+            batchNumber = match[1];
+          }
+        } else {
+          // 直接使用扫码结果作为批次号
+          batchNumber = res.result;
+        }
+        
+        if (batchNumber) {
+          wx.navigateTo({
+            url: `/pages/trace/trace?batchNumber=${batchNumber}`
+          });
+        } else {
+          wx.showToast({
+            title: '无效的二维码',
+            icon: 'none'
+          });
+        }
       },
       fail: () => {
         wx.showToast({
           title: '扫码失败',
           icon: 'none'
         });
+      }
+    });
+  },
+
+  // 手动输入批次号
+  inputBatchNumber() {
+    wx.showModal({
+      title: '输入批次号',
+      editable: true,
+      placeholderText: '请输入批次号',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const batchNumber = res.content.trim();
+          if (batchNumber) {
+            wx.navigateTo({
+              url: `/pages/trace/trace?batchNumber=${batchNumber}`
+            });
+          } else {
+            wx.showToast({
+              title: '请输入有效的批次号',
+              icon: 'none'
+            });
+          }
+        }
       }
     });
   },

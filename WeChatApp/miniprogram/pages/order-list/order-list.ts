@@ -1,4 +1,5 @@
-import { getOrderList, cancelOrder, updateOrderStatus, payOrder, deleteOrder } from '../../api/order';
+import { getOrderList, cancelOrder, updateOrderStatus, deleteOrder } from '../../api/order';
+import { pay } from '../../api/payment';
 import { getUserInfo } from '../../utils/auth';
 
 // 订单状态映射
@@ -144,55 +145,43 @@ Page({
   },
 
   // 支付订单
-  handlePayOrder(e: any) {
+  async handlePayOrder(e: any) {
     const id = e.currentTarget.dataset.id;
-    const price = e.currentTarget.dataset.price;
     
-    wx.showModal({
-      title: '确认支付',
-      content: `订单金额：¥${price}`,
-      confirmText: '确认支付',
-      cancelText: '取消',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            wx.showLoading({ title: '发起支付...', mask: true });
-            
-            // 调用支付接口（模拟支付）
-            await payOrder(id);
-            
-            wx.hideLoading();
-            
-            // 模拟微信支付成功
-            wx.showModal({
-              title: '支付成功',
-              content: '订单支付成功，农户将尽快为您发货',
-              showCancel: false,
-              success: () => {
-                // 刷新列表
-                this.loadOrders(true);
-              }
-            });
-          } catch (error: any) {
-            wx.hideLoading();
-            console.error('支付失败:', error);
-            
-            wx.showModal({
-              title: '支付失败',
-              content: error.message || '支付失败，请稍后重试',
-              confirmText: '重试',
-              cancelText: '取消',
-              success: (res) => {
-                if (res.confirm) {
-                  // 重试支付
-                  this.handlePayOrder(e);
-                }
-              }
-            });
+    try {
+      // 使用统一支付方法（带完整动画效果）
+      await pay(id);
+      
+      // 支付成功，刷新列表
+      wx.showToast({
+        title: '支付成功',
+        icon: 'success',
+        duration: 1500
+      });
+      
+      setTimeout(() => {
+        this.loadOrders(true);
+      }, 500);
+      
+    } catch (error: any) {
+      console.error('支付失败:', error);
+      
+      // 如果不是用户取消支付，显示错误信息
+      if (error.message !== '用户取消支付') {
+        wx.showModal({
+          title: '支付失败',
+          content: error.message || '支付失败，请稍后重试',
+          confirmText: '重试',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              // 重试支付
+              this.handlePayOrder(e);
+            }
           }
-        }
+        });
       }
-    });
+    }
   },
 
   // 确认收货

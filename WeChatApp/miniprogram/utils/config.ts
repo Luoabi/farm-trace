@@ -3,7 +3,7 @@
  */
 
 // API 基础地址
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = 'http://172.20.10.7:8080/api';
 
 // 超时时间（毫秒）
 export const REQUEST_TIMEOUT = 10000;
@@ -14,7 +14,7 @@ export const TOKEN_KEY = 'token';
 // 用户信息存储 key
 export const USER_INFO_KEY = 'userInfo';
 
-// 购物车存储 key
+// 购物车存储 keya
 export const CART_KEY = 'cart';
 
 // 默认分页大小

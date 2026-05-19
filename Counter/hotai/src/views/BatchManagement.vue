@@ -116,10 +116,49 @@
           <el-descriptions-item label="上链时间" :span="2">
             {{ currentBatch.chainTime ? formatDate(currentBatch.chainTime) : '-' }}
           </el-descriptions-item>
+          <el-descriptions-item label="二维码状态">
+            <el-tag :type="currentBatch.qrCode ? 'success' : 'info'">
+              {{ currentBatch.qrCode ? '已生成' : '未生成' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="二维码生成时间">
+            {{ currentBatch.qrCodeGenerateTime ? formatDate(currentBatch.qrCodeGenerateTime) : '-' }}
+          </el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ formatDate(currentBatch.createTime) }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ formatDate(currentBatch.updateTime) }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ currentBatch.remark || '无' }}</el-descriptions-item>
         </el-descriptions>
+        
+        <!-- 二维码显示区域 -->
+        <div v-if="currentBatch.qrCode" class="qrcode-section">
+          <el-divider content-position="left">溯源二维码</el-divider>
+          <div class="qrcode-container">
+            <img :src="currentBatch.qrCode" alt="溯源二维码" class="qrcode-image" />
+            <div class="qrcode-actions">
+              <el-button type="primary" @click="downloadQRCode(currentBatch)">
+                <el-icon><Download /></el-icon>
+                下载二维码
+              </el-button>
+              <el-button @click="printQRCode(currentBatch)">
+                <el-icon><Printer /></el-icon>
+                打印二维码
+              </el-button>
+            </div>
+            <div class="qrcode-tip">
+              <el-icon><InfoFilled /></el-icon>
+              <span>顾客扫描此二维码可查看产品完整溯源信息</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="no-qrcode-tip">
+          <el-alert
+            title="二维码未生成"
+            type="info"
+            description="将批次状态更新为已收获后，系统会自动生成溯源二维码"
+            :closable="false"
+            show-icon
+          />
+        </div>
       </div>
       <template #footer>
         <el-button @click="handleCloseDetail">关闭</el-button>
@@ -179,7 +218,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, Download, Printer, InfoFilled } from '@element-plus/icons-vue';
 import { batchAPI } from '../api/modules/batch';
 import { productAPI } from '../api/modules/product';
 
@@ -491,6 +530,19 @@ const handleCloseForm = () => {
 
 // 保存批次
 const handleSaveBatch = () => {
+  // 先更新状态（如果是编辑模式且状态改变了）
+  if (isEdit.value && batchForm.status) {
+    batchAPI.updateBatchStatus(batchForm.id, batchForm.status).then((res) => {
+      if (batchForm.status == 2) {
+        console.log("状态已更新为已收获，后端正在生成二维码");
+        ElMessage.success('批次状态已更新为已收获，二维码已自动生成');
+      }
+    }).catch((error) => {
+      console.error('更新状态失败:', error);
+      ElMessage.error('更新状态失败');
+    });
+  }
+  
   batchFormRef.value.validate((valid) => {
     if (valid) {
       saving.value = true;
@@ -567,6 +619,83 @@ const handleDeleteBatch = (id) => {
     // 取消删除
     ElMessage.info('已取消删除');
   });
+};
+
+// 下载二维码
+const downloadQRCode = (batch) => {
+  if (!batch.qrCode) {
+    ElMessage.warning('二维码未生成');
+    return;
+  }
+  
+  const link = document.createElement('a');
+  link.href = batch.qrCode;
+  link.download = `qrcode-${batch.batchNumber}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  ElMessage.success('二维码已下载');
+};
+
+// 打印二维码
+const printQRCode = (batch) => {
+  if (!batch.qrCode) {
+    ElMessage.warning('二维码未生成');
+    return;
+  }
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>打印二维码 - ${batch.batchNumber}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding: 20px;
+              font-family: Arial, sans-serif;
+            }
+            h2 {
+              margin-bottom: 10px;
+            }
+            .info {
+              margin-bottom: 20px;
+              text-align: center;
+            }
+            img {
+              max-width: 400px;
+              border: 2px solid #333;
+              padding: 10px;
+            }
+            .footer {
+              margin-top: 20px;
+              font-size: 14px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <h2>${batch.productName} - 溯源二维码</h2>
+          <div class="info">
+            <p><strong>批次号：</strong>${batch.batchNumber}</p>
+            <p><strong>农场：</strong>${batch.farmName}</p>
+            <p>扫码查看产品溯源信息</p>
+          </div>
+          <img src="${batch.qrCode}" alt="二维码" />
+          <div class="footer">
+            <p>生成时间：${batch.qrCodeGenerateTime ? formatDate(batch.qrCodeGenerateTime) : new Date().toLocaleString('zh-CN')}</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }
 };
 
 // 组件挂载时初始化数据
@@ -652,4 +781,46 @@ onMounted(() => {
     margin-right: 0;
   }
 }
+
+/* 二维码显示区域 */
+.qrcode-section {
+  margin-top: 30px;
+}
+
+.qrcode-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.qrcode-image {
+  max-width: 300px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+  margin-bottom: 20px;
+}
+
+.qrcode-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.qrcode-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.no-qrcode-tip {
+  margin-top: 20px;
+}
+
 </style>

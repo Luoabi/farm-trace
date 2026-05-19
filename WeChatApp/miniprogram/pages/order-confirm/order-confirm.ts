@@ -1,4 +1,4 @@
-import { createOrder, payOrder } from '../../api/order';
+import { createOrder } from '../../api/order';
 import { getDefaultAddress, getAddressList } from '../../api/address';
 import { getUserInfo } from '../../utils/auth';
 import { Address } from '../../types/address';
@@ -160,19 +160,20 @@ Page({
         duration: 1500
       });
       
-      // 如果只有一个订单，直接发起支付
-      if (orders.length === 1) {
-        setTimeout(() => {
-          this.handlePayment(orders[0].id);
-        }, 1500);
-      } else {
-        // 多个订单，跳转到订单列表
-        setTimeout(() => {
+      // 跳转到订单详情或订单列表（不自动发起支付）
+      setTimeout(() => {
+        if (orders.length === 1) {
+          // 单个订单，跳转到订单详情页
+          wx.redirectTo({
+            url: `/pages/order-detail/order-detail?id=${orders[0].id}`
+          });
+        } else {
+          // 多个订单，跳转到订单列表
           wx.switchTab({
             url: '/pages/order-list/order-list'
           });
-        }, 1500);
-      }
+        }
+      }, 1500);
     } catch (error: any) {
       wx.hideLoading();
       this.setData({ submitting: false });
@@ -182,53 +183,6 @@ Page({
         title: error.message || '下单失败',
         icon: 'none',
         duration: 3000
-      });
-    }
-  },
-
-  // 发起支付
-  async handlePayment(orderId: string) {
-    try {
-      wx.showLoading({ title: '发起支付...', mask: true });
-      
-      // 调用支付接口（模拟支付）
-      await payOrder(orderId);
-      
-      wx.hideLoading();
-      
-      // 模拟微信支付
-      // 在实际生产环境中，这里应该调用 wx.requestPayment()
-      wx.showModal({
-        title: '支付成功',
-        content: '订单支付成功，农户将尽快为您发货',
-        showCancel: false,
-        success: () => {
-          // 跳转到订单详情页
-          wx.redirectTo({
-            url: `/pages/order-detail/order-detail?id=${orderId}`
-          });
-        }
-      });
-    } catch (error: any) {
-      wx.hideLoading();
-      console.error('支付失败:', error);
-      
-      wx.showModal({
-        title: '支付失败',
-        content: error.message || '支付失败，请稍后重试',
-        confirmText: '重试',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            // 重试支付
-            this.handlePayment(orderId);
-          } else {
-            // 跳转到订单列表
-            wx.switchTab({
-              url: '/pages/order-list/order-list'
-            });
-          }
-        }
       });
     }
   }

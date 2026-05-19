@@ -78,7 +78,10 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
           // 处理不同的响应格式
           // 格式1: { code: 200, message: 'success', data: {...} }
           if (responseData.code !== undefined) {
-            if (responseData.code === 200 || responseData.code === 0) {
+            // 支持字符串和数字类型的 code
+            const code = String(responseData.code);
+            
+            if (code === '200' || code === '0' || code === 200 || code === 0) {
               resolve(responseData.data || responseData);
             } else {
               // 业务错误
